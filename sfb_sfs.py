@@ -141,10 +141,10 @@ def test_speed():
     # print(sfs_fast)
     assert abs(sfb_fast - sfb) < sys.float_info.epsilon
     assert abs(sfs_fast - sfs) < sys.float_info.epsilon
-    print(f"Regular sfb took {1000*(sfb_end-sfb_start):.3f}")
-    print(f"Fast sfb took {1000*(sfb_fast_end-sfb_fast_start):.3f}")
-    print(f"Regular sfs took {1000*(sfs_end-sfs_start):.3f}")
-    print(f"Fast sfs took {1000*(sfs_fast_end-sfs_fast_start):.3f}")    
+    # print(f"Regular sfb took {1000*(sfb_end-sfb_start):.3f}")
+    # print(f"Fast sfb took {1000*(sfb_fast_end-sfb_fast_start):.3f}")
+    # print(f"Regular sfs took {1000*(sfs_end-sfs_start):.3f}")
+    # print(f"Fast sfs took {1000*(sfs_fast_end-sfs_fast_start):.3f}")    
     
 
 

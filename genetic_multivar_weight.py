@@ -139,26 +139,26 @@ def calculate_kb_score_new(
         redirect_evaluator.set_kb(kb)
         inaccuracy_evaluator.set_kb(kb)
         score = 0
-        sfb_ts = time.time()
+        # sfb_ts = time.time()
         sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
-        sfb_te = time.time()
+        # sfb_te = time.time()
         score += constants_weight.SFB_WEIGHT * sfb_sum
         sfs_sum = 0
-        sfs_ts = time.time()
-        total_ts = time.time()
+        # sfs_ts = time.time()
+        # total_ts = time.time()
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
             sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
             if score + constants_weight.SFS_WEIGHT * sfs_sum > best:
                 break
-        sfs_te = time.time()
+        # sfs_te = time.time()
         score += constants_weight.SFS_WEIGHT * sfs_sum
         discomfort_sum = 0
-        discomfort_ts = time.time()
+        # discomfort_ts = time.time()
         for bigram in sfb_evaluator.bigrams.items():
             discomfort_sum += discomfort_evaluator.evaluate_bigram(bigram)
             if score + constants_weight.DISCOMFORT_WEIGHT * discomfort_sum > best:
                 break
-        discomfort_te = time.time()
+        # discomfort_te = time.time()
         score += constants_weight.DISCOMFORT_WEIGHT * discomfort_sum
 
         fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
@@ -167,9 +167,9 @@ def calculate_kb_score_new(
         score += constants_weight.FINGER_FREQ_WEIGHT * fingerfreq_sum
         redirect_ts = time.time()
         redirect_sum = redirect_evaluator.evaluate_fast()
-        redirect_te = time.time()
+        # redirect_te = time.time()
         score += constants_weight.REDIRECT_WEIGHT * redirect_sum
-        inaccuracy_ts = time.time()
+        # inaccuracy_ts = time.time()
         minimum_failing_inaccuracy_score = (
             best - score
         ) / constants_weight.INACCURACY_WEIGHT
@@ -189,23 +189,23 @@ def calculate_kb_score_new(
             )
             total_func_calls += 1
             score += constants_weight.INACCURACY_WEIGHT * inaccuracy_sum
-        inaccuracy_te = time.time()
-        total_te = time.time()
-        times:dict[str, float] = {
-            Categories.DISCOMFORT.value: discomfort_te - discomfort_ts,
-            Categories.INACCURACY.value: inaccuracy_te - inaccuracy_ts,
-            Categories.REDIRECT.value: redirect_te - redirect_ts,
-            Categories.SFS.value: sfs_te - sfs_ts,
-            Categories.SFB.value: sfb_te - sfb_ts,
-        }
-        times_sorted_lst = sorted(
-            list((name, time) for name, time in times.items()), key=lambda x: x[1]
-        )
-        total = total_te - total_ts
+        # inaccuracy_te = time.time()
+        # total_te = time.time()
+        # times:dict[str, float] = {
+        #     Categories.DISCOMFORT.value: discomfort_te - discomfort_ts,
+        #     Categories.INACCURACY.value: inaccuracy_te - inaccuracy_ts,
+        #     Categories.REDIRECT.value: redirect_te - redirect_ts,
+        #     Categories.SFS.value: sfs_te - sfs_ts,
+        #     Categories.SFB.value: sfb_te - sfb_ts,
+        # }
+        # times_sorted_lst = sorted(
+        #     list((name, time) for name, time in times.items()), key=lambda x: x[1]
+        # )
+        # total = total_te - total_ts
         # for (name, val) in times_sorted_lst:
         #     print(f"{name.capitalize()}: {100*val/total:.3f}%")
         # print()
-        print( f"Discomfort pct: {100*(discomfort_te-discomfort_ts)/(total_te-total_ts)}%" )
+        # print( f"Discomfort pct: {100*(discomfort_te-discomfort_ts)/(total_te-total_ts)}%" )
         scores_cache[kb] = {
             "score": score,
             Categories.FINGERFREQ.value: fingerfreq_sum,

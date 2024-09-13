@@ -108,7 +108,6 @@ def test_redirect():
     assert redirect_eval.evaluate_trigram(("gag", 2)) == 2
 
     random_kb = RandomKeyboard([[2, 2, 2, 2], [2, 2, 2, 2]])
-    print("KB: ", random_kb)
     redirect_eval = RedirectEvaluator(random_kb)
     start_fast = time.time()
     fast = redirect_eval.evaluate_fast()
@@ -119,10 +118,10 @@ def test_redirect():
         slow += redirect_eval.evaluate_trigram(trigram)
     end_slow = time.time()
     assert abs(slow - fast) < 0.000001
-    print(f"Slow took:{1000*(end_slow - start_slow)}")
-    print(f"Fast took:{1000*(end_fast - start_fast)}")
+    # print(f"Slow took:{1000*(end_slow - start_slow)}")
+    # print(f"Fast took:{1000*(end_fast - start_fast)}")
     
-    print("Redirect tests passed!")
+    # print("Redirect tests passed!")
 
 
 test_redirect()

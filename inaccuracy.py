@@ -167,7 +167,7 @@ def test_inaccuracy_evaluator():
     # Case 7: Empty strings (should return None, as no difference can exist)
     assert inaccuracy_evaluator.differs("", "") == None, "Test Case 7 Failed"
 
-    print("All test cases passed!")
+    # print("All test cases passed!")
 
 
 test_inaccuracy_evaluator()
