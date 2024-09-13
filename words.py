@@ -2,30 +2,38 @@ import string
 import json
 from wordfreq import get_frequency_dict
 
-from types_1 import FreqDict, FreqList
+from constants_weight import USE_PUNCTUATION
+from custom_types import FreqDict, FreqList
 
 def get_punctuation():
-    return list(".,")
+    return list(".,") if USE_PUNCTUATION else list("")
 def get_letters():
     return list(string.ascii_lowercase + "'")
 
 def get_letters_and_punctuation():
     return get_letters() + get_punctuation()
 
-def clean_dictionary(word_dict: dict[str, float]) -> FreqDict:
+def clean_dictionary(word_dict: dict[str, float], letters: list[str]) -> FreqDict:
     return {
         key: value
         for key, value in word_dict.items()
-        if all(c in get_letters_and_punctuation() for c in key) and key
+        if all(c in letters for c in key) and key
     }
 
 
-def create_freq_dict() -> FreqDict:
-    return clean_dictionary(get_frequency_dict(lang="en", wordlist="best"))
+def create_inaccuracy_freq_dict() -> FreqDict:
+    return clean_dictionary(get_frequency_dict(lang="en", wordlist="best"), get_letters())
 
 
-def create_accuracy_freq_list() -> FreqList:
-    return sorted(list(create_freq_dict().items()), key=lambda x: -x[1])
+def create_inaccuracy_freq_list() -> FreqList:
+    return sorted(list(create_inaccuracy_freq_dict().items()), key=lambda x: -x[1])
+
+def create_full_freq_dict() -> FreqDict:
+    return clean_dictionary(get_frequency_dict(lang="en", wordlist="best"), get_letters() + get_punctuation())
+
+
+def create_full_freq_list() -> FreqList:
+    return sorted(list(create_full_freq_dict().items()), key=lambda x: -x[1])
 
 
 def get_ngrams(key: str):

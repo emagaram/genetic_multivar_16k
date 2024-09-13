@@ -1,6 +1,6 @@
 from keyboard import Keyboard
-from types_1 import FreqList
-from words import create_accuracy_freq_list
+from custom_types import FreqList
+from words import create_inaccuracy_freq_list
 
 
 class FingerFreqEvaluator:
@@ -26,7 +26,7 @@ class FingerFreqEvaluator:
             for hand in self.kb.keyboard
         ]
 
-    def evaluate_finger_frequencies(
+    def evaluate_finger_frequencies_MSE(
         self, goal: list[list[float]]
     ) -> float:
         # print("EV")
@@ -38,6 +38,20 @@ class FingerFreqEvaluator:
         return sum(
             (a - t) ** 2 for a, t in zip(flattened_finger_frequencies, flattened_goal)
         ) / len(finger_frequencies)
+
+    def evaluate_finger_frequencies_MAPE(
+        self, goal: list[list[float]]
+    ) -> float:
+        finger_frequencies = self.get_finger_frequencies()
+        flattened_finger_frequencies = [
+            ff for hand in finger_frequencies for ff in hand
+        ]
+        flattened_goal = [freq for hand in goal for freq in hand]
+
+        # MAPE calculation
+        return sum(
+            abs((a - t) / t) for a, t in zip(flattened_finger_frequencies, flattened_goal)
+        ) / len(flattened_goal)   
 
     def set_letter_frequencies(self, freq_list: FreqList):
         res: dict[str, float] = {}
@@ -75,7 +89,7 @@ def test_evaluate_letter_freq():
     assert abs(finger_freqs[0][1] - 0.05) < epsilon
     assert abs(finger_freqs[0][2] - 0.00) < epsilon
     goal_ff = [[0.65, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
-    assert ff.evaluate_finger_frequencies(goal_ff) - 0.0025 < epsilon
+    assert ff.evaluate_finger_frequencies_MSE(goal_ff) - 0.0025 < epsilon
     print("test_evaluate_letter_freq passed!")
 
 

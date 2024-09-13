@@ -1,4 +1,5 @@
 import random
+from constants_weight import USE_PUNCTUATION
 from words import get_letters, get_punctuation
 
 PunctuationOption = tuple[tuple[int, int, int], tuple[int, int, int]]
@@ -69,7 +70,7 @@ class RandomKeyboard(Keyboard):
                 [
                     (
                         letters.pop()
-                        if (i, j, k) not in punctuation_option
+                        if not USE_PUNCTUATION or (i, j, k) not in punctuation_option
                         else punctuation.pop()
                     )
                     for k in range(column)

@@ -1,3 +1,9 @@
 venv/
-__pycache_/
+__pycache__/**
 keyboard_optimizer_output_no_full_dict/
+gen_output_no_score_tol/
+created_datasets/
+starting_data/
+create_datasets_input/
+create_datasets_output/
+optimizer_output/
