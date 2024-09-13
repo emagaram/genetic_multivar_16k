@@ -7,9 +7,8 @@ import time
 import sys
 import os
 import copy
-
-
 import datetime
+
 from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 from discomfort import DiscomfortEvaluator
@@ -96,7 +95,6 @@ def mutate(kb: RandomKeyboard):
             a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
             b_col, b_key, _ = kb.get_random_non_punc_kb_index()
             while a_col[a_key] == b_col[b_key] or len(a_col[a_key]) == 1:
-                a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
                 b_col, b_key, _ = kb.get_random_non_punc_kb_index()
             a_char = a_col[a_key][a_letter]
             a_col[a_key] = a_col[a_key].replace(a_char, "", 1)
@@ -134,19 +132,27 @@ def calculate_kb_score(
 
     score = 0
     if kb not in scores_cache:
+        # total_ts = time.time()
+        # set_ts = time.time()
         finger_freq_evaluator.set_kb(kb)
         sfb_evaluator.set_kb(kb)
         discomfort_evaluator.set_kb(kb)
         redirect_evaluator.set_kb(kb)
         inaccuracy_evaluator.set_kb(kb)
+        # set_te = time.time()
         score = 0
+         
+        fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
+            settings.GOAL_FINGER_FREQ
+        )
+        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum        
         # sfb_ts = time.time()
         sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
         # sfb_te = time.time()
         score += settings.SFB_WEIGHT * sfb_sum
         sfs_sum = 0
         # sfs_ts = time.time()
-        # total_ts = time.time()
+               
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
             sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
             if score + settings.SFS_WEIGHT * sfs_sum > best:
@@ -162,11 +168,7 @@ def calculate_kb_score(
         # discomfort_te = time.time()
         score += settings.DISCOMFORT_WEIGHT * discomfort_sum
 
-        fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
-            settings.GOAL_FINGER_FREQ
-        )
-        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
-        redirect_ts = time.time()
+        # redirect_ts = time.time()
         minimum_failing_redirect_score = (
             best - score
         ) / settings.REDIRECT_WEIGHT        
@@ -201,14 +203,17 @@ def calculate_kb_score(
         #     Categories.REDIRECT.value: redirect_te - redirect_ts,
         #     Categories.SFS.value: sfs_te - sfs_ts,
         #     Categories.SFB.value: sfb_te - sfb_ts,
+        #     "set_kb": set_te - set_ts
         # }
         # times_sorted_lst = sorted(
         #     list((name, time) for name, time in times.items()), key=lambda x: x[1]
         # )
         # total = total_te - total_ts
-        # for (name, val) in times_sorted_lst:
-        #     print(f"{name.capitalize()}: {100*val/total:.3f}%")
-        # print()
+        # if random.random() < 0.01:
+        #     print(f"Total: {1000*total:.3f}ms")
+        #     for (name, val) in times_sorted_lst:
+        #         print(f"{name.capitalize()}: {100*val/total:.3f}%")
+        #     print()
         # print( f"Discomfort pct: {100*(discomfort_te-discomfort_ts)/(total_te-total_ts)}%" )
         scores_cache[kb] = {
             "score": score,
@@ -319,9 +324,10 @@ def run_simulation(
         scored_population.sort(key=lambda x: x[0])
 
         end_time = time.time()
-        print(
-            f"Generation {generation_count} took {end_time - start_time:.2f} seconds, Best score: {current_best_kb[0]:.8f}"
-        )
+        if settings.PRINT:
+            print(
+                f"Generation {generation_count} took {end_time - start_time:.2f} seconds, Best score: {current_best_kb[0]:.8f}"
+            )
         generation_count += 1
         solution_improvement_count += 1
 

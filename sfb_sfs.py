@@ -54,8 +54,6 @@ class SFBSFSEvaluator:
         for finger, keys in self.reverse_column_dict.items():
             for i, letter1 in enumerate(keys):
                 for letter2 in keys[i + 1 :]:
-                    if(letter1 == letter2):
-                        print("ERRR")
                     key = sort_str(letter1 + letter2)
                     freq = bigrams[key] if bigrams.get(key) != None else 0
                     multiplier_inner = multiplier
