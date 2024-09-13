@@ -1,4 +1,4 @@
-PRINT = False
+PRINT = True
 
 USE_PUNCTUATION = True
 

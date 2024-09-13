@@ -7,4 +7,5 @@ starting_data/
 create_datasets_input/
 create_datasets_output/
 optimizer_output/
+optimizer_output_old/
 myenv/
