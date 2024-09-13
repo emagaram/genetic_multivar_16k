@@ -126,9 +126,7 @@ def calculate_kb_score(
     discomfort_evaluator: DiscomfortEvaluator,
     redirect_evaluator: RedirectEvaluator,
     inaccuracy_evaluator: InaccuracyEvaluator,
-    avg_loop_count: float,
-    total_func_calls: int,
-) -> tuple[dict[str, float], tuple[int, float]]:
+) -> dict[str, float]:
 
     score = 0
     if kb not in scores_cache:
@@ -187,13 +185,9 @@ def calculate_kb_score(
             inaccuracy_sum = heuristic
             score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         else:
-            loop_count, inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
+            inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
                 minimum_failing_inaccuracy_score
             )
-            avg_loop_count = (avg_loop_count * total_func_calls + loop_count) / (
-                total_func_calls + 1
-            )
-            total_func_calls += 1
             score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         # inaccuracy_te = time.time()
         # total_te = time.time()
@@ -224,7 +218,7 @@ def calculate_kb_score(
             Categories.SFS.value: sfs_sum,
             Categories.REDIRECT.value: redirect_sum,
         }
-    return (scores_cache[kb], (total_func_calls, avg_loop_count))
+    return scores_cache[kb]
 
 
 
@@ -241,7 +235,7 @@ def run_simulation(
     ERRORS_LOG_FILENAME = f"{PROCESS_ID}_errors.log"
     SCORE_FILE = f"{PROCESS_ID}_best_layout.txt"
     all_time_score = sys.float_info.max
-    current_best_kb: tuple[float, RandomKeyboard] = (10000000, [])
+    current_best_score: float = sys.float_info.max
     finger_freq_evaluator = FingerFreqEvaluator(create_full_freq_list())
     # print(finger_freq_evaluator)
     sfb_evaluator = SFBSFSEvaluator()
@@ -263,8 +257,6 @@ def run_simulation(
     generation_count = 1
     total_generation_count = 0
     solution_improvement_count = 0
-    outer_avg_loop_count = 0
-    outer_total_func_calls = 0
     while not stop_event.is_set():
         if stop_event.is_set():
             break
@@ -278,37 +270,30 @@ def run_simulation(
                 iteration_path, PROCESS_ID, total_generation_count
             )
             print(
-                f"Generation died. Total generations: {generation_count}, Reg Score: {current_best_kb[0]}"
+                f"Generation died. Total generations: {generation_count}, Reg Score: {current_best_score}"
             )
             generation_count = 1
             solution_improvement_count = 0
-            current_best_kb = (10000, [])
+            current_best_score = sys.float_info.max
             population = [RandomKeyboard(layout) for _ in range(POPULATION_SIZE)]
 
         start_time = time.time()  # Start timing the generation
         for kb in population:
-            performance, (total_func_calls, avg_loop_count) = calculate_kb_score(
+            performance = calculate_kb_score(
                 kb,
-                current_best_kb[0],
+                current_best_score,
                 scores_cache,
                 finger_freq_evaluator,
                 sfb_evaluator,
                 discomfort_evaluator,
                 redirect_evaluator,
                 inaccuracy_evaluator,
-                outer_avg_loop_count,
-                outer_total_func_calls,
             )
-            outer_avg_loop_count = avg_loop_count
-            outer_total_func_calls = total_func_calls
-            if random.random() < 0.00001:
-                print(f"Average loop count: {outer_avg_loop_count}")
-                print(f"Total func calls: {outer_total_func_calls}")
             score = performance["score"]
             scored_population.append((score, kb))
 
-            if score < current_best_kb[0]:
-                current_best_kb = (score, kb)
+            if score < current_best_score:
+                current_best_score = score
                 solution_improvement_count = 0
                 if score < all_time_score:
                     print("New best all time kb with score", score)
@@ -325,7 +310,7 @@ def run_simulation(
         end_time = time.time()
         if settings.PRINT:
             print(
-                f"Generation {generation_count} took {end_time - start_time:.2f} seconds, Best score: {current_best_kb[0]:.8f}"
+                f"Generation {generation_count} took {end_time - start_time:.2f} seconds, Best score: {current_best_score:.8f}"
             )
         generation_count += 1
         solution_improvement_count += 1

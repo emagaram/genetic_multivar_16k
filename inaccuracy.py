@@ -87,7 +87,7 @@ class InaccuracyEvaluator:
     def evaluate_inaccuracy(
         self,
         best: float,
-    ) -> tuple[int, float]:
+    ) -> float:
         if self.kb == None:
             raise Exception("Inaccuracy evaluator has no keyboard")
         config = self.kb_to_config()
@@ -100,8 +100,8 @@ class InaccuracyEvaluator:
             score += value * min(4, count)
             index_count[t10_word] = count + 1
             if score > best:
-                return i, score
-        return len(self.freq_list), score
+                break
+        return score
 
     def kb_to_config(self) -> dict[str, str]:
         keys = list(string.ascii_lowercase + ";")

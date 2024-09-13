@@ -31,14 +31,21 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     
     # SFB
     sfb_evaluator = SFBSFSEvaluator(kb)
-    sfb_sum = sum(sfb_evaluator.evaluate_bigram_stat(bigram) for bigram in sfb_evaluator.bigrams.items())
-    res+=f"Same Finger Bigrams: {sfb_sum*100:.3f}%\n\n"
+    sfb_sum_only1u = sum(sfb_evaluator.evaluate_bigram_stat(bigram, True) for bigram in sfb_evaluator.bigrams.items())
+    res+=f"1U Same Finger Bigrams: {sfb_sum_only1u*100:.3f}%\n\n"
+    sfb_sum_only1u = sum(sfb_evaluator.evaluate_bigram_stat(bigram, False) for bigram in sfb_evaluator.bigrams.items())
+    res+=f"0U and 1U Same Finger Bigrams: {sfb_sum_only1u*100:.3f}%\n\n"
     
     # SFS 
     for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
-        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram) for skipgram in skipgrams.items())
-        res+=f"Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
+        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, True) for skipgram in skipgrams.items())
+        res+=f"1U Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
     res+="\n"
+    
+    for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
+        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, True) for skipgram in skipgrams.items())
+        res+=f"0U and 1U Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
+    res+="\n"    
     
     # Discomfort
     discomfort_evaluator = DiscomfortEvaluator(kb)

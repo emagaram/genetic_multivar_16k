@@ -65,6 +65,7 @@ class SFBSFSEvaluator:
                     sum += freq * multiplier_inner
         return sum
 
+    
     def evaluate_bigram_inner(
         self, bigram: tuple[str, float], multiplier: float, use_mult: bool
     ) -> float:
@@ -89,8 +90,17 @@ class SFBSFSEvaluator:
     def evaluate_bigram(self, bigram: tuple[str, float]) -> float:
         return self.evaluate_bigram_inner(bigram, 1, True)
 
-    def evaluate_bigram_stat(self, bigram: tuple[str, float]) -> float:
-        return self.evaluate_bigram_inner(bigram, 1, False)
+    def evaluate_bigram_stat(self, bigram: tuple[str, float], only_1u: bool) -> float:
+        bigram_str, bigram_freq = bigram
+        # We don't have to check this but it avoids adding a constant amount to all scores, so it saves time
+        if bigram_str[1] == bigram_str[0]:
+            return 0
+        if self.column_dict.get(bigram_str[1]) != self.column_dict.get(bigram_str[0]):
+            return 0
+        if only_1u and self.row_dict.get(bigram_str[1]) == self.row_dict.get(bigram_str[0]):
+            return 0
+        return bigram_freq
+        
 
     def evaluate_skipgram(self, skipgram: tuple[str, float, int]) -> float:
         skipgram_str, skipgram_frec, skipgram_level = skipgram
@@ -98,8 +108,8 @@ class SFBSFSEvaluator:
             (skipgram_str, skipgram_frec), 0.5 ** (skipgram_level + 1), True
         )
 
-    def evaluate_skipgram_stat(self, skipgram: tuple[str, float]) -> float:
-        return self.evaluate_bigram_inner(skipgram, 1, False)
+    def evaluate_skipgram_stat(self, skipgram: tuple[str, float], only_1u: bool) -> float:
+        return self.evaluate_bigram_stat(skipgram, only_1u)
 
 
 def test_speed():
