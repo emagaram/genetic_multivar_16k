@@ -309,9 +309,9 @@ def run_simulation(
 
             if score < current_best_kb[0]:
                 current_best_kb = (score, kb)
-                print("New best kb with score", score)
                 solution_improvement_count = 0
                 if score < all_time_score:
+                    print("New best all time kb with score", score)
                     all_time_score = score
                     write_best_kb_to_file(
                         iteration_path,
