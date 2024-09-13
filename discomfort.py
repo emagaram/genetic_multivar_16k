@@ -1,4 +1,4 @@
-from constants_weight import PINKY_ABOVE_MIDDLE, PINKY_ABOVE_RING, RING_ABOVE_MIDDLE
+from settings import PINKY_ABOVE_MIDDLE, PINKY_ABOVE_RING, RING_ABOVE_MIDDLE
 from keyboard import Keyboard, RandomKeyboard
 from util import kb_to_column_dict, kb_to_row_dict
 from words import get_bigrams

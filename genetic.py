@@ -13,10 +13,10 @@ import datetime
 from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 from discomfort import DiscomfortEvaluator
-from get_stats_weight import get_score_stats
+from get_stats import get_score_stats
 from inaccuracy import InaccuracyEvaluator
 from score_categories import Categories
-import constants_weight
+import settings
 
 from finger_freq import FingerFreqEvaluator
 from keyboard import RandomKeyboard, Keyboard
@@ -57,6 +57,7 @@ def write_best_kb_to_file(
     with open(full_path, "w") as file:
         file.write(str(kb) + "\n")
         file.write(get_score_stats(kb, performance))
+        file.write(settings.settings_to_str(space))
 
 
 # [[2,2,2,2],[2,2,2,2]]
@@ -118,7 +119,7 @@ def write_to_file(base_path: str, file_name: str, text: str):
         file.write(text)
 
 
-def calculate_kb_score_new(
+def calculate_kb_score(
     kb: Keyboard,
     best: float,
     scores_cache: dict[Keyboard, dict[str, float]],
@@ -142,44 +143,47 @@ def calculate_kb_score_new(
         # sfb_ts = time.time()
         sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
         # sfb_te = time.time()
-        score += constants_weight.SFB_WEIGHT * sfb_sum
+        score += settings.SFB_WEIGHT * sfb_sum
         sfs_sum = 0
         # sfs_ts = time.time()
         # total_ts = time.time()
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
             sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
-            if score + constants_weight.SFS_WEIGHT * sfs_sum > best:
+            if score + settings.SFS_WEIGHT * sfs_sum > best:
                 break
         # sfs_te = time.time()
-        score += constants_weight.SFS_WEIGHT * sfs_sum
+        score += settings.SFS_WEIGHT * sfs_sum
         discomfort_sum = 0
         # discomfort_ts = time.time()
         for bigram in sfb_evaluator.bigrams.items():
             discomfort_sum += discomfort_evaluator.evaluate_bigram(bigram)
-            if score + constants_weight.DISCOMFORT_WEIGHT * discomfort_sum > best:
+            if score + settings.DISCOMFORT_WEIGHT * discomfort_sum > best:
                 break
         # discomfort_te = time.time()
-        score += constants_weight.DISCOMFORT_WEIGHT * discomfort_sum
+        score += settings.DISCOMFORT_WEIGHT * discomfort_sum
 
         fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
-            constants_weight.GOAL_FINGER_FREQ
+            settings.GOAL_FINGER_FREQ
         )
-        score += constants_weight.FINGER_FREQ_WEIGHT * fingerfreq_sum
+        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
         redirect_ts = time.time()
-        redirect_sum = redirect_evaluator.evaluate_fast()
+        minimum_failing_redirect_score = (
+            best - score
+        ) / settings.REDIRECT_WEIGHT        
+        redirect_sum = redirect_evaluator.evaluate_fast(minimum_failing_redirect_score)
         # redirect_te = time.time()
-        score += constants_weight.REDIRECT_WEIGHT * redirect_sum
+        score += settings.REDIRECT_WEIGHT * redirect_sum
         # inaccuracy_ts = time.time()
         minimum_failing_inaccuracy_score = (
             best - score
-        ) / constants_weight.INACCURACY_WEIGHT
+        ) / settings.INACCURACY_WEIGHT
         heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
             minimum_failing_inaccuracy_score
         )
         inaccuracy_sum = 0
         if heuristic > minimum_failing_inaccuracy_score:
             inaccuracy_sum = heuristic
-            score += constants_weight.INACCURACY_WEIGHT * inaccuracy_sum
+            score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         else:
             loop_count, inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
                 minimum_failing_inaccuracy_score
@@ -188,7 +192,7 @@ def calculate_kb_score_new(
                 total_func_calls + 1
             )
             total_func_calls += 1
-            score += constants_weight.INACCURACY_WEIGHT * inaccuracy_sum
+            score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         # inaccuracy_te = time.time()
         # total_te = time.time()
         # times:dict[str, float] = {
@@ -218,84 +222,6 @@ def calculate_kb_score_new(
     return (scores_cache[kb], (total_func_calls, avg_loop_count))
 
 
-def calculate_kb_score_old(
-    kb: Keyboard,
-    best: float,
-    scores_cache: dict[Keyboard, dict[str, float]],
-    finger_freq_evaluator: FingerFreqEvaluator,
-    sfb_evaluator: SFBSFSEvaluator,
-    discomfort_evaluator: DiscomfortEvaluator,
-    redirect_evaluator: RedirectEvaluator,
-    inaccuracy_evaluator: InaccuracyEvaluator,
-    avg_loop_count: float,
-    total_func_calls: int,
-) -> tuple[dict[str, float], tuple[int, float]]:
-
-    score = 0
-    if kb not in scores_cache:
-        finger_freq_evaluator.set_kb(kb)
-        sfb_evaluator.set_kb(kb)
-        discomfort_evaluator.set_kb(kb)
-        redirect_evaluator.set_kb(kb)
-        inaccuracy_evaluator.set_kb(kb)
-        score = 0
-        sfb_sum = 0
-        discomfort_sum = 0
-        for bigram in sfb_evaluator.bigrams.items():
-            sfb_sum += sfb_evaluator.evaluate_bigram(bigram)
-            discomfort_sum += discomfort_evaluator.evaluate_bigram(bigram)
-            # if (
-            #     score
-            #     + constants_weight.SFB_WEIGHT * sfb_sum
-            #     + constants_weight.DISCOMFORT_WEIGHT * discomfort_sum
-            #     > best
-            # ):
-            #     break
-        score += constants_weight.DISCOMFORT_WEIGHT * discomfort_sum
-        score += constants_weight.SFB_WEIGHT * sfb_sum
-        sfs_sum = 0
-        for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
-            for skip_str, skip_freq in skipgrams.items():
-                sfs_sum += sfb_evaluator.evaluate_skipgram((skip_str, skip_freq, i))
-                # if score + constants_weight.SFS_WEIGHT * sfs_sum > best:
-                #     break
-        score += constants_weight.SFS_WEIGHT * sfs_sum
-
-        fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
-            constants_weight.GOAL_FINGER_FREQ
-        )
-        score += constants_weight.FINGER_FREQ_WEIGHT * fingerfreq_sum
-
-        redirect_sum = 0
-        # start_time = time.time()  # Start timing the generation
-        for trigram in redirect_evaluator.trigrams.items():
-            redirect_sum += redirect_evaluator.evaluate_trigram(trigram)
-            # if score + constants_weight.REDIRECT_WEIGHT * redirect_sum > best:
-            #     break
-        score += constants_weight.REDIRECT_WEIGHT * redirect_sum
-        minimum_failing_inaccuracy_score = (
-            best - score
-        ) / constants_weight.INACCURACY_WEIGHT
-        loop_count, inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
-            sys.float_info.max
-        )
-        avg_loop_count = (avg_loop_count * total_func_calls + loop_count) / (
-            total_func_calls + 1
-        )
-        total_func_calls += 1
-        score += constants_weight.INACCURACY_WEIGHT * inaccuracy_sum
-
-        scores_cache[kb] = {
-            "score": score,
-            Categories.FINGERFREQ.value: fingerfreq_sum,
-            Categories.INACCURACY.value: inaccuracy_sum,
-            Categories.DISCOMFORT.value: discomfort_sum,
-            Categories.SFB.value: sfb_sum,
-            Categories.SFS.value: sfs_sum,
-            Categories.REDIRECT.value: redirect_sum,
-        }
-    a = (scores_cache[kb], (total_func_calls, avg_loop_count))
-    return a
 
 
 def run_simulation(
@@ -356,7 +282,7 @@ def run_simulation(
 
         start_time = time.time()  # Start timing the generation
         for kb in population:
-            performance, (total_func_calls, avg_loop_count) = calculate_kb_score_new(
+            performance, (total_func_calls, avg_loop_count) = calculate_kb_score(
                 kb,
                 current_best_kb[0],
                 scores_cache,

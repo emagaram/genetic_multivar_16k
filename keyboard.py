@@ -1,5 +1,5 @@
 import random
-from constants_weight import USE_PUNCTUATION
+from settings import USE_PUNCTUATION
 from words import get_letters, get_punctuation
 
 PunctuationOption = tuple[tuple[int, int, int], tuple[int, int, int]]

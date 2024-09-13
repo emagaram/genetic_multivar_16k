@@ -2,7 +2,7 @@ import string
 import json
 from wordfreq import get_frequency_dict
 
-from constants_weight import USE_PUNCTUATION
+from settings import USE_PUNCTUATION
 from custom_types import FreqDict, FreqList
 
 def get_punctuation():

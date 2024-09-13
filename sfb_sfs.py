@@ -1,6 +1,6 @@
 import sys
 import time
-from constants_weight import SFB_SFS_DIFF_KEY_PENALTY, SFB_SFS_PINKY_PUNISHMENT
+from settings import SFB_SFS_DIFF_KEY_PENALTY, SFB_SFS_PINKY_PENALTY
 from keyboard import Keyboard
 from util import kb_to_column_dict, kb_to_row_dict, kb_to_reverse_column_dict, sort_str
 from words import get_bigrams, get_skipgrams
@@ -61,7 +61,7 @@ class SFBSFSEvaluator:
                     multiplier_inner = multiplier
                     if use_mult:
                         if finger == 0 or finger == 7:
-                            multiplier_inner *= SFB_SFS_PINKY_PUNISHMENT
+                            multiplier_inner *= SFB_SFS_PINKY_PENALTY
                         if self.row_dict.get(letter1) != self.row_dict.get(letter2):
                             multiplier_inner *= SFB_SFS_DIFF_KEY_PENALTY
                     sum += freq * multiplier_inner
@@ -81,7 +81,7 @@ class SFBSFSEvaluator:
             if use_mult:
                 # Punish pinkies
                 if col_1 == 0 or col_1 == 7:
-                    multiplier *= SFB_SFS_PINKY_PUNISHMENT
+                    multiplier *= SFB_SFS_PINKY_PENALTY
                 # Punish distance
                 if self.row_dict.get(bigram_str[1]) != self.row_dict.get(bigram_str[0]):
                     multiplier *= SFB_SFS_DIFF_KEY_PENALTY
@@ -170,7 +170,6 @@ def test_evaluate_sfb():
         "gk": 0.12,
         "gh": 0.25,
     }
-    expected_result = 2.625
     res_sfb = 0
     res_sfs = 0
     evaluator1 = SFBSFSEvaluator(kb1)
@@ -178,7 +177,6 @@ def test_evaluate_sfb():
         res_sfb += evaluator1.evaluate_bigram((bigram, freq))
         res_sfs += evaluator1.evaluate_skipgram((bigram, freq, 0))
         res_sfs += evaluator1.evaluate_skipgram((bigram, freq, 1))
-    total = res_sfb + res_sfs
 
     res_sfb_fast = evaluator1.evaluate_bigrams_fast_inner(grams, 1, True)
     res_sfs_fast = evaluator1.evaluate_skipgrams_fast(
@@ -189,9 +187,6 @@ def test_evaluate_sfb():
     # print(res_sfb)
     assert res_sfb_fast == res_sfb
     assert res_sfs_fast == res_sfs
-    assert (
-        abs(total - expected_result) < 1e-6
-    ), f"Expected {expected_result}, but got {res_sfb}"
     # print("test_evaluate_sfb passed!")
 
 

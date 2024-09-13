@@ -5,7 +5,7 @@ from keyboard import Keyboard
 from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from words import create_inaccuracy_freq_list
-from constants_weight import GOAL_FINGER_FREQ
+from settings import GOAL_FINGER_FREQ
 
 def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     space = "  "

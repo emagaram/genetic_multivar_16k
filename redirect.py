@@ -1,6 +1,6 @@
 import sys
 import time
-from constants_weight import BAD_REDIRECT
+from settings import BAD_REDIRECT
 from keyboard import Keyboard, RandomKeyboard
 from util import kb_to_column_dict, kb_to_reverse_column_dict
 from words import get_trigrams
@@ -29,11 +29,11 @@ class RedirectEvaluator:
         self.column_dict = kb_to_column_dict(kb)
         self.reverse_column_dict = kb_to_reverse_column_dict(kb)
 
-    def evaluate_fast(self) -> float:
-        return self.evaluate_fast_inner(True)
+    def evaluate_fast(self, max: float = sys.float_info.max) -> float:
+        return self.evaluate_fast_inner(True, max)
     
 
-    def evaluate_fast_inner(self, use_mult: bool) -> float:
+    def evaluate_fast_inner(self, use_mult: bool, max = sys.float_info.max) -> float:
         hand_len = 4
         reverse_column_dict = [
             [self.reverse_column_dict[i] for i in range(hand_len)],
@@ -60,6 +60,8 @@ class RedirectEvaluator:
                                     score += freq
                                 else:
                                     score += freq * BAD_REDIRECT
+                                if score > max:
+                                    return score
         return score
 
     def evaluate_trigram_inner(self, trigram: tuple[str, float], use_mult: bool):
