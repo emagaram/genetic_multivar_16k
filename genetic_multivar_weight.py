@@ -305,7 +305,7 @@ def run_simulation(
 ):
 
     POPULATION_SIZE = 60
-    SOLUTION_IMPROVEMNT_DEADLINE = 500
+    SOLUTION_IMPROVEMNT_DEADLINE = 1000
     PROCESS_ID = str(os.getpid() % 100)
     ERRORS_LOG_FILENAME = f"{PROCESS_ID}_errors.log"
     SCORE_FILE = f"{PROCESS_ID}_best_layout.txt"
