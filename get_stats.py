@@ -43,7 +43,7 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     res+="\n"
     
     for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
-        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, True) for skipgram in skipgrams.items())
+        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, False) for skipgram in skipgrams.items())
         res+=f"0U and 1U Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
     res+="\n"    
     

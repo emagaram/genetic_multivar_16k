@@ -13,7 +13,7 @@ class InaccuracyEvaluator:
 
     def __init__(self, freq_list: FreqList):
         self.kb: Keyboard = None
-        self.shared_key_penalties: dict[str,float] = {}
+        self.shared_key_penalties: dict[str, float] = {}
         self.bigrams = {}
         self.freq_list = freq_list
         self.set_shared_key_penalties()
@@ -75,14 +75,12 @@ class InaccuracyEvaluator:
             for col in hand:
                 for key in col:
                     for i, l1 in enumerate(key):
-                        for l2 in key[i+1:]:
-                            score+=self.shared_key_penalties[sort_str(l1+l2)]
+                        for l2 in key[i + 1 :]:
+                            score += self.shared_key_penalties[sort_str(l1 + l2)]
                             if score > best:
                                 return score
         # print(f"Heuristic took {count} iterations")
         return score
-                    
-        
 
     def evaluate_inaccuracy(
         self,
@@ -127,7 +125,7 @@ class InaccuracyEvaluator:
     def get_t10_config_guess_percentage(self, space="") -> str:
         t10_config = self.kb_to_config()
         # Initialize dictionary to store guess counts
-        total_word_values = 0
+        total_freq = 0
         guess_counts = [0, 0, 0, 0, 0]
         t10_count = {}
         res = ""
@@ -136,7 +134,7 @@ class InaccuracyEvaluator:
             t10_word = self.word_to_t10_word(word, t10_config)
             occurence = t10_count.get(t10_word, 0)
             t10_count[t10_word] = occurence + 1
-            total_word_values += value
+            total_freq += value
             if occurence < len(
                 guess_counts
             ):  # Check if the word is within the first N guesses
@@ -146,7 +144,7 @@ class InaccuracyEvaluator:
 
         # Print out the percentages for each guess
         for i, count in enumerate(guess_counts):
-            res += f"{space}{['First', 'Second', 'Third', 'Fourth', 'Fifth'][i]} guess percentage: {count*100/total_word_values:.3f}%\n"
+            res += f"{space}{['First', 'Second', 'Third', 'Fourth', 'Fifth'][i]} guess percentage: {count*100/total_freq:.3f}%\n"
         return res
 
 
@@ -171,3 +169,35 @@ def test_inaccuracy_evaluator():
 
 
 test_inaccuracy_evaluator()
+
+
+# def artificial(self):
+#     return {
+#         "n": "a",
+#         "z": "a",
+#         "g": "a",
+#         "f": "b",
+#         "d": "b",
+#         "w": "c",
+#         "a": "c",
+#         "k": "c",
+#         "b": "d",
+#         "n": "d",
+#         "q": "d",
+#         "c": "e",
+#         "e": "e",
+#         "s": "f",
+#         "u": "f",
+#         "v": "g",
+#         "h": "g",
+#         "i": "g",
+#         "z": "h",
+#         "r": "h",
+#         "p": "h",
+#         "j": "i",
+#         "l": "i",
+#         "y": "i",
+#         "t": "j",
+#         "o": "j",
+#         "'": "j",
+#     }
