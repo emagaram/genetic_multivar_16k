@@ -1,13 +1,24 @@
-PRINT = True
+from enum import Enum
 
+
+class Mode(Enum):
+    IGNORE_FIRST = "Ignore First"
+    ONLY_FIRST = "Only First"
+    ONLY_LAST = "Only Last"
+    MIDDLE = "Middle"
+    ALL = "All"
+
+
+PRINT = False
+MODE = Mode.IGNORE_FIRST
 USE_PUNCTUATION = True
 
-INACCURACY_WEIGHT = 20
-SFB_WEIGHT = 5
-REDIRECT_WEIGHT = 1.5
-DISCOMFORT_WEIGHT = 1.5
-SFS_WEIGHT = 1.5
-FINGER_FREQ_WEIGHT = 0.75
+INACCURACY_WEIGHT = 10
+SFB_WEIGHT = 1
+REDIRECT_WEIGHT = 0.25
+DISCOMFORT_WEIGHT = 0.25
+SFS_WEIGHT = 0.25
+FINGER_FREQ_WEIGHT = 0.1
 
 # Discomfort
 PINKY_ABOVE_RING = 3
@@ -31,16 +42,21 @@ PINKY_FREQ = PINKY_WEIGHT / (2 * weight_sum)
 RING_FREQ = RING_WEIGHT / (2 * weight_sum)
 MIDDLE_FREQ = MIDDLE_WEIGHT / (2 * weight_sum)
 INDEX_FREQ = INDEX_WEIGHT / (2 * weight_sum)
-# Left should have ~45% to account for space key addition.
-# Non-split layouts still might prefer a higher right-side usage
+
 GOAL_FINGER_FREQ = [
-    [0.9 * PINKY_FREQ, 0.9 * RING_FREQ, 0.9 * MIDDLE_FREQ, 0.9 * INDEX_FREQ],
-    [1.1 * INDEX_FREQ, 1.1 * MIDDLE_FREQ, 1.1 * RING_FREQ, 1.1 * PINKY_FREQ],
+    [PINKY_FREQ, RING_FREQ, MIDDLE_FREQ, INDEX_FREQ],
+    [INDEX_FREQ, MIDDLE_FREQ, RING_FREQ, PINKY_FREQ],
 ]
+# # Left should have ~45% to account for space key addition.
+# # Non-split layouts still might prefer a higher right-side usage
+# GOAL_FINGER_FREQ = [
+#     [0.9 * PINKY_FREQ, 0.9 * RING_FREQ, 0.9 * MIDDLE_FREQ, 0.9 * INDEX_FREQ],
+#     [1.1 * INDEX_FREQ, 1.1 * MIDDLE_FREQ, 1.1 * RING_FREQ, 1.1 * PINKY_FREQ],
+# ]
 assert abs(sum(key for hand in GOAL_FINGER_FREQ for key in hand)) - 1 < 0.00001
 
 
-def settings_to_str(space:str = " ") -> str:
+def settings_to_str(space: str = " ") -> str:
     return f"""Settings:
 USE_PUNCTUATION = {USE_PUNCTUATION}
 

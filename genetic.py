@@ -13,7 +13,7 @@ from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 from discomfort import DiscomfortEvaluator
 from get_stats import get_score_stats
-from inaccuracy import InaccuracyEvaluator
+from inaccuracy import InaccuracyEvaluator, Mode
 from score_categories import Categories
 import settings
 
@@ -79,8 +79,9 @@ punctuation_options_2_symbols: list[
 
 
 # Moves a letter to another key
-def mutate(kb: RandomKeyboard):
-    for _ in range(random.randint(1, 5)):
+def mutate(kb: RandomKeyboard, change_big: bool):
+    loops = random.randint(1, 5) if not change_big else random.randint(3, 15)
+    for _ in range(loops):
 
         # Swap
         if random.random() < 0.5:
@@ -177,18 +178,20 @@ def calculate_kb_score(
         minimum_failing_inaccuracy_score = (
             best - score
         ) / settings.INACCURACY_WEIGHT
-        heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
-            minimum_failing_inaccuracy_score
-        )
-        inaccuracy_sum = 0
-        if heuristic > minimum_failing_inaccuracy_score:
-            inaccuracy_sum = heuristic
-            score += settings.INACCURACY_WEIGHT * inaccuracy_sum
-        else:
-            inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
-                minimum_failing_inaccuracy_score
-            )
-            score += settings.INACCURACY_WEIGHT * inaccuracy_sum
+        inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(minimum_failing_inaccuracy_score, settings.MODE)
+        score+=settings.INACCURACY_WEIGHT*inaccuracy_sum
+        # heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
+        #     minimum_failing_inaccuracy_score
+        # )
+        
+        # if heuristic > minimum_failing_inaccuracy_score:
+        #     inaccuracy_sum = heuristic
+        #     score += settings.INACCURACY_WEIGHT * inaccuracy_sum
+        # else:
+        #     inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
+        #         minimum_failing_inaccuracy_score
+        #     )
+        #     score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         # inaccuracy_te = time.time()
         # total_te = time.time()
         # times:dict[str, float] = {
@@ -324,7 +327,7 @@ def run_simulation(
         random.shuffle(scored_population)
         while len(next_population) < POPULATION_SIZE:
             _, kb = scored_population.pop()
-            mutate(kb)
+            mutate(kb, solution_improvement_count > 0.75*SOLUTION_IMPROVEMNT_DEADLINE)
             next_population.append(kb)
         population = next_population
 
@@ -340,7 +343,7 @@ if __name__ == "__main__":
 
     # Modify your main script logic here
     # int(cpu_count())
-    num_processes = 1
+    num_processes = 4
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 

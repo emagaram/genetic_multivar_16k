@@ -1,3 +1,4 @@
+import heapq
 from discomfort import DiscomfortEvaluator
 from finger_freq import FingerFreqEvaluator
 from inaccuracy import InaccuracyEvaluator
@@ -5,11 +6,14 @@ from keyboard import Keyboard
 from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from words import create_inaccuracy_freq_list
-from settings import GOAL_FINGER_FREQ
+from settings import GOAL_FINGER_FREQ, MODE
+
 
 def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     space = "  "
-    res = ""
+    res = f"Inaccuracy Mode: {MODE.value}\n"
+    
+    
     for stat_name, raw_score in performance.items():
         res+=f"{stat_name.capitalize()}:\n"
         res+=f"{space}raw score: {raw_score}\n"
@@ -55,12 +59,31 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     # Inaccuracy
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     inaccuracy_evaluator.set_kb(kb)
-    res+=f"Inaccuracy:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(space)}\n"
+    res+=f"Inaccuracy:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(MODE, space)}\n"
     
     # Redirects
     redirect_evaluator = RedirectEvaluator(kb)
     redirect_sum = sum(redirect_evaluator.evaluate_trigram_stat(trigram) for trigram in redirect_evaluator.trigrams.items())
     res+=f"Redirects: {redirect_sum*100:.3f}%\n\n"
+    
+    # Top textonyms
+    res+=f"Top Texonyms Max:\n"
+    top_textonyms = inaccuracy_evaluator.get_textonyms_heap()
+    freq_sum = 0
+    top_n = 100
+    only_first_char = 0
+    not_only_first_char = 0
+    # for freq, words, word in top_textonyms:
+    #         print(f"{word}:{words}")
+    # res+=f"only first pct: {only_first_char*100:.3f}%\n"
+    # res+=f"not only first pct: {not_only_first_char*100:.3f}%\n"
+    for _ in range(top_n):
+        (freq, words, word) = heapq.heappop(top_textonyms)
+        freq*=-1 # To make positive
+        res+=f"{space}{word}({freq}):{words}\n"
+        freq_sum += freq
+    res+=f"Top {top_n} total frequency: {100*freq_sum}%\n"
+    
+    
     return res
-
 
