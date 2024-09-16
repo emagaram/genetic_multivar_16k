@@ -18,7 +18,7 @@ from score_categories import Categories
 import settings
 
 from finger_freq import FingerFreqEvaluator
-from keyboard import Keyboard, MagicKey
+from keyboard import Key, Keyboard, MagicKey
 from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from words import create_full_freq_list, create_inaccuracy_freq_list
@@ -81,31 +81,56 @@ punctuation_options_2_symbols: list[
 
 # Moves a letter to another key
 def mutate(kb: Keyboard, is_good: bool):
-    loops = random.randint(1, 3) if is_good else random.randint(5, 10)
+    # Idk for this
+    loops = random.randint(1, 3) if is_good else random.randint(2, 6)
+
     for _ in range(loops):
         rand = random.random()
         if rand < 0.3 and len(kb.magic_locations) > 0:
             hand, col, row = random.choice(kb.magic_locations)
-            mk:MagicKey = kb.keyboard[hand][col][row]
+            mk: MagicKey = kb.keyboard[hand][col][row]
             mk.mutate()
-        # Swap            
-        elif rand <= 1:
-            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
-            b_col, b_key, b_letter = kb.get_random_letter_kb_index()
-            a_char = a_col[a_key].letters[a_letter]
-            b_char = b_col[b_key].letters[b_letter]
-            a_col[a_key].letters = a_col[a_key].letters.replace(a_char, b_char, 1)
-            b_col[b_key].letters = b_col[b_key].letters.replace(b_char, a_char, 1)
-        # Move
+        # Swap letter
+        elif rand < 0.7:
+            a_key, a_letter_idx = kb.get_random_letter_kb_index()
+            b_key, b_letter_idx = kb.get_random_letter_kb_index()
+            a_char = a_key.letters[a_letter_idx]
+            b_char = b_key.letters[b_letter_idx]
+            a_key.letters = a_key.letters.replace(a_char, b_char, 1)
+            b_key.letters = b_key.letters.replace(b_char, a_char, 1)
+        # Swap column
+        elif rand < 0.75:
+            col_a, colb = random.choice(random.choice(kb.keyboard)), random.choice(random.choice(kb.keyboard))
+            for key_a, key_b in zip(col_a, colb):
+                temp = key_a.letters
+                key_a.letters = key_b.letters
+                key_b.letters = temp        
+        # Move key
+        elif rand <= 0.85:
+            a_key, _ = kb.get_random_letter_kb_index()
+            b_key, _ = kb.get_random_letter_kb_index()
+            temp = a_key.letters
+            a_key.letters = b_key.letters
+            b_key.letters = temp
+        # Move letters
         else:
-            print("How?")
-            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
-            b_col, b_key, _ = kb.get_random_letter_kb_index()
-            while a_col[a_key] == b_col[b_key] or len(a_col[a_key].letters) == 1:
-                a_col, a_key, a_letter = kb.get_random_letter_kb_index()
-            a_char = a_col[a_key].letters[a_letter]
-            a_col[a_key].letters = a_col[a_key].letters.replace(a_char, "", 1)
-            b_col[b_key].letters += a_char
+            def can_move_letters_to(moving_letter: str, letters: str):
+                return moving_letter == "'" or len(letters) < (
+                    2 + 1 if letters.find("'") != -1 else 0
+                )
+
+            a_key, a_letter_idx = kb.get_random_letter_kb_index()
+            b_key, _ = kb.get_random_letter_kb_index()
+            while (
+                a_key.letters == b_key.letters
+                or len(a_key.letters) == 1
+                or not can_move_letters_to(a_key.letters[a_letter_idx], b_key.letters)
+            ):
+                a_key, a_letter_idx = kb.get_random_letter_kb_index()
+                b_key, b_letter_idx = kb.get_random_letter_kb_index()
+            a_char = a_key.letters[a_letter_idx]
+            a_key.letters = a_key.letters.replace(a_char, "", 1)
+            b_key.letters += a_char
 
 
 def write_generations_completed(base_path: str, process_id: str, generations: int):
@@ -146,18 +171,18 @@ def calculate_kb_score(
         inaccuracy_evaluator.set_kb(kb)
         # set_te = time.time()
         score = 0
-         
-        fingerfreq_sum = finger_freq_evaluator.evaluate_finger_frequencies_MAPE(
-            settings.GOAL_FINGER_FREQ
+
+        fingerfreq_sum = (
+            finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
         )
-        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum        
+        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
         # sfb_ts = time.time()
         sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
         # sfb_te = time.time()
         score += settings.SFB_WEIGHT * sfb_sum
         sfs_sum = 0
         # sfs_ts = time.time()
-               
+
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
             sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
             if score + settings.SFS_WEIGHT * sfs_sum > best:
@@ -174,30 +199,28 @@ def calculate_kb_score(
         score += settings.DISCOMFORT_WEIGHT * discomfort_sum
 
         # redirect_ts = time.time()
-        minimum_failing_redirect_score = (
-            best - score
-        ) / settings.REDIRECT_WEIGHT        
+        minimum_failing_redirect_score = (best - score) / settings.REDIRECT_WEIGHT
         redirect_sum = redirect_evaluator.evaluate_fast(minimum_failing_redirect_score)
         # redirect_te = time.time()
         score += settings.REDIRECT_WEIGHT * redirect_sum
         # inaccuracy_ts = time.time()
-        minimum_failing_inaccuracy_score = (
-            best - score
-        ) / settings.INACCURACY_WEIGHT
-        inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(minimum_failing_inaccuracy_score, settings.MODE)
-        score+=settings.INACCURACY_WEIGHT*inaccuracy_sum
-        # heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
-        #     minimum_failing_inaccuracy_score
-        # )
-        
-        # if heuristic > minimum_failing_inaccuracy_score:
-        #     inaccuracy_sum = heuristic
-        #     score += settings.INACCURACY_WEIGHT * inaccuracy_sum
-        # else:
-        #     inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy(
-        #         minimum_failing_inaccuracy_score
-        #     )
-        #     score += settings.INACCURACY_WEIGHT * inaccuracy_sum
+        minimum_failing_inaccuracy_score = (best - score) / settings.INACCURACY_WEIGHT
+        inaccuracy_sum = 0
+        if settings.NUM_MAGIC > 0:
+            inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(
+                minimum_failing_inaccuracy_score, settings.MODE
+            )
+        else:
+            heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
+                minimum_failing_inaccuracy_score
+            )
+            if heuristic > minimum_failing_inaccuracy_score:
+                inaccuracy_sum = heuristic
+            else:
+                inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(
+                    minimum_failing_inaccuracy_score, settings.MODE
+                )
+        score += settings.INACCURACY_WEIGHT * inaccuracy_sum
         # inaccuracy_te = time.time()
         # total_te = time.time()
         # times:dict[str, float] = {
@@ -230,8 +253,6 @@ def calculate_kb_score(
     return scores_cache[kb]
 
 
-
-
 def run_simulation(
     iteration_path: str,
     stop_event,
@@ -260,9 +281,7 @@ def run_simulation(
         level=logging.ERROR,
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
-    population: list[Keyboard] = [
-        Keyboard(layout) for _ in range(POPULATION_SIZE)
-    ]
+    population: list[Keyboard] = [Keyboard(layout) for _ in range(POPULATION_SIZE)]          
     generation_count = 1
     total_generation_count = 0
     solution_improvement_count = 0
@@ -288,6 +307,8 @@ def run_simulation(
 
         start_time = time.time()  # Start timing the generation
         for kb in population:
+            # m s   'cf gp   jn rw   qt ly   |   az ox   ev ku   , bi   . dh
+
             performance = calculate_kb_score(
                 kb,
                 current_best_score,
@@ -316,7 +337,7 @@ def run_simulation(
 
         # Sort the population based on the score (lower is better)
         scored_population.sort(key=lambda x: x[0])
-        avg = sum(score for score, _ in scored_population)/len(scored_population)
+        avg = sum(score for score, _ in scored_population) / len(scored_population)
         end_time = time.time()
         if settings.PRINT:
             print(
@@ -331,13 +352,13 @@ def run_simulation(
             copy.deepcopy(config)
             for _, config in scored_population[: len(scored_population) // 4]
         ]
-        random.shuffle(scored_population)       
-        
+        random.shuffle(scored_population)
+
         while len(next_population) < POPULATION_SIZE:
             score, kb = scored_population.pop()
             mutate(kb, score < avg)
             next_population.append(kb)
-        
+
         population = next_population
 
 
@@ -352,7 +373,7 @@ if __name__ == "__main__":
 
     # Modify your main script logic here
     # int(cpu_count()
-    num_processes = 1
+    num_processes = 4
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 
@@ -387,3 +408,75 @@ if __name__ == "__main__":
         # Finally, write the end time regardless of how the program exits
         write_end_time(iteration_path)
         print(f"End time written to {os.path.join(iteration_path, 'end_time.txt')}")
+
+
+"""
+
+    kb = Keyboard(
+        layout,
+        [
+            [
+                [Key("m"), Key("s")],
+                [Key("'cf"), Key("gp")],
+                [Key("jn"), Key("rw")],
+                [Key("qt"), Key("ly")],
+            ],
+            [
+                [Key("az"), Key("ox")],
+                [Key("ev"), Key("ku")],
+                [Key(","), Key("bi")],
+                [Key("."), Key("dh")],
+            ],
+        ],
+    )    
+    performance = calculate_kb_score(
+        kb,
+        current_best_score,
+        scores_cache,
+        finger_freq_evaluator,
+        sfb_evaluator,
+        discomfort_evaluator,
+        redirect_evaluator,
+        inaccuracy_evaluator,
+    )
+    write_best_kb_to_file(
+        "./test1.txt",
+        performance,
+        kb,
+        SCORE_FILE,
+    )    
+    kb2 = Keyboard(
+        layout,
+        [
+            [
+                [Key("mz"), Key("'cy")],
+                [Key("px"), Key("lu")],
+                [Key("be"), Key("n")],
+                [Key("qt"), Key("jr")],
+            ],
+            [
+                [Key("aw"), Key("df")],
+                [Key("s"), Key("ko")],
+                [Key(","), Key("gi")],
+                [Key("."), Key("vh")],
+            ],
+        ],
+    )   
+    performance = calculate_kb_score(
+        kb2,
+        current_best_score,
+        scores_cache,
+        finger_freq_evaluator,
+        sfb_evaluator,
+        discomfort_evaluator,
+        redirect_evaluator,
+        inaccuracy_evaluator,
+    )    
+    write_best_kb_to_file(
+        "./test2.txt",
+        performance,
+        kb2,
+        SCORE_FILE,
+    )  
+
+"""

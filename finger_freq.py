@@ -1,23 +1,25 @@
 from keyboard import Key, Keyboard
 from custom_types import FreqList
-from words import create_inaccuracy_freq_list
+from settings import GOAL_FINGER_MAX
+from words import CorpusFrequencies, create_inaccuracy_freq_list, get_characters
 
 
 class FingerFreqEvaluator:
     frequencies: dict[str, float] = {}
-    kb:Keyboard 
+    kb: Keyboard
 
     def __init__(self, freq_list: FreqList) -> None:
         self.set_letter_frequencies(freq_list)
+        self.corpus_freq = CorpusFrequencies()
 
-    def set_kb(self,k:Keyboard):
+    def set_kb(self, k: Keyboard):
         self.kb = k
-    
+
     def get_finger_frequencies(self) -> list[list[int]]:
         return [
             [
                 sum(
-                    self.frequencies[char] if char in self.frequencies else 0
+                    self.frequencies[char]/self.corpus_freq.chars_freq if char in self.frequencies else 0
                     for key in col
                     for char in key.letters
                 )
@@ -26,9 +28,7 @@ class FingerFreqEvaluator:
             for hand in self.kb.keyboard
         ]
 
-    def evaluate_finger_frequencies_MSE(
-        self, goal: list[list[float]]
-    ) -> float:
+    def evaluate_finger_frequencies_MSE(self, goal: list[list[float]]) -> float:
         # print("EV")
         finger_frequencies = self.get_finger_frequencies()
         flattened_finger_frequencies = [
@@ -39,9 +39,7 @@ class FingerFreqEvaluator:
             (a - t) ** 2 for a, t in zip(flattened_finger_frequencies, flattened_goal)
         ) / len(finger_frequencies)
 
-    def evaluate_finger_frequencies_MAPE(
-        self, goal: list[list[float]]
-    ) -> float:
+    def evaluate_finger_frequencies_MAPE(self, goal: list[list[float]]) -> float:
         finger_frequencies = self.get_finger_frequencies()
         flattened_finger_frequencies = [
             ff for hand in finger_frequencies for ff in hand
@@ -50,22 +48,24 @@ class FingerFreqEvaluator:
 
         # MAPE calculation
         return sum(
-            abs((a - t) / t) for a, t in zip(flattened_finger_frequencies, flattened_goal)
-        ) / len(flattened_goal)   
+            abs((a - t) / t)
+            for a, t in zip(flattened_finger_frequencies, flattened_goal)
+        ) / len(flattened_goal)
+
+    def evaluate_finger_frequencies_max_limit_MAPE(self) -> float:
+        finger_frequencies = self.get_finger_frequencies()
+        flattened_finger_frequencies = [
+            ff for hand in finger_frequencies for ff in hand
+        ]
+        flattened_goal = [freq for hand in GOAL_FINGER_MAX for freq in hand]
+
+        return sum(
+            (max(0, a - t) / t)
+            for a, t in zip(flattened_finger_frequencies, flattened_goal)
+        ) / len(flattened_goal)
 
     def set_letter_frequencies(self, freq_list: FreqList):
-        res: dict[str, float] = {}
-        sum = 0
-        for word, freq in freq_list:
-            for char in word:
-                sum += freq
-                if char in res:
-                    res[char] += freq
-                else:
-                    res[char] = freq
-        for key, val in res.items():
-            res[key] = val / sum
-        self.frequencies = res
+        self.frequencies = get_characters()
 
 
 def test_evaluate_letter_freq():
@@ -82,7 +82,12 @@ def test_evaluate_letter_freq():
     assert abs(result["b"] - 0.05) < epsilon
     assert abs(result["c"] - 0.05) < epsilon
     assert abs(result["n"] - 0.3) < epsilon
-    kb: Keyboard = Keyboard([[Key("ab"), Key("c"), Key("d"), Key("e"), Key("f")], [Key("g"), Key("h"), Key("i"), Key("j"), Key("k")]])
+    kb: Keyboard = Keyboard(
+        [
+            [Key("ab"), Key("c"), Key("d"), Key("e"), Key("f")],
+            [Key("g"), Key("h"), Key("i"), Key("j"), Key("k")],
+        ]
+    )
     ff.set_kb(kb)
     finger_freqs = ff.get_finger_frequencies()
     assert abs(finger_freqs[0][0] - 0.65) < epsilon

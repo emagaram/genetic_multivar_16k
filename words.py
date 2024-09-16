@@ -5,6 +5,19 @@ from wordfreq import get_frequency_dict
 from settings import USE_PUNCTUATION
 from custom_types import FreqDict, FreqList
 
+class CorpusFrequencies():
+    def __init__(self) -> None:
+        self.inaccuracies_freq = sum(freq for _, freq in create_inaccuracy_freq_list())
+        bigrams = get_bigrams()
+        trigrams = get_trigrams()
+        skipgrams = get_skipgrams()
+        characters = get_characters()
+        self.bigrams_freq = sum(freq for freq in bigrams.values())
+        self.trigrams_freq = sum(freq for freq in trigrams.values())
+        self.skipgrams_freq = sum(freq for skipgram_lst in skipgrams for freq in skipgram_lst.values())
+        self.letters_freq = sum(freq for skipgram_lst in skipgrams for freq in skipgram_lst.values())
+        self.chars_freq = sum(freq for freq in characters.values())
+
 def get_punctuation():
     return list(".,") if USE_PUNCTUATION else list("")
 def get_letters():
@@ -36,7 +49,7 @@ def create_full_freq_list() -> FreqList:
     return sorted(list(create_full_freq_dict().items()), key=lambda x: -x[1])
 
 
-def get_ngrams(key: str):
+def get_from_shai(key: str):
     # Open and read the JSON file
     try:
         with open("shai.json", "r") as file:
@@ -60,14 +73,14 @@ def get_ngrams(key: str):
 def get_bigrams() -> dict[str, float]:
     return {
         key: val
-        for key, val in get_ngrams("bigrams").items()
+        for key, val in get_from_shai("bigrams").items()
         if all(c in get_letters_and_punctuation() for c in key)
     }
 
 def get_trigrams() -> dict[str, float]:
     return {
         key: val
-        for key, val in get_ngrams("trigrams").items()
+        for key, val in get_from_shai("trigrams").items()
         if all(c in get_letters_and_punctuation() for c in key)
     }
 
@@ -76,8 +89,15 @@ def get_skipgrams() -> list[dict[str, float]]:
     return [
         {
             key: val
-            for key, val in get_ngrams(name).items()
+            for key, val in get_from_shai(name).items()
             if all(c in get_letters_and_punctuation() for c in key)
         }
         for name in ["skipgrams", "skipgrams2", "skipgrams3"]
     ]
+
+def get_characters() -> dict[str, float]:
+    return {
+        key: val
+        for key, val in get_from_shai("characters").items()
+        if all(c in get_letters_and_punctuation() for c in key)
+    }

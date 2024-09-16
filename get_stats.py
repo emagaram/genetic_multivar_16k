@@ -6,7 +6,7 @@ from keyboard import Keyboard
 from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from words import create_inaccuracy_freq_list
-from settings import GOAL_FINGER_FREQ, MODE
+from settings import GOAL_FINGER_FREQ, GOAL_FINGER_MAX, MODE
 
 
 def get_score_stats(kb: Keyboard, performance: dict[str, float]):
@@ -30,7 +30,7 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
         for j, freq in enumerate(hand):
             side = "Left" if i == 0 else "Right"
             finger = fingers[j] if i == 0 else fingers_rev[j]
-            res+=f"{space}{side} {finger}: {freq*100:.3f}%, Goal: {GOAL_FINGER_FREQ[i][j]*100:.3f}%\n"
+            res+=f"{space}{side} {finger}: {freq*100:.3f}%, Max: {GOAL_FINGER_MAX[i][j]*100:.3f}%\n"
     res+="\n"
     
     # SFB

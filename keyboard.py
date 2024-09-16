@@ -6,7 +6,7 @@ import settings
 from words import get_letters, get_punctuation
 
 def get_t10_keys():
-    return list(string.ascii_uppercase + ";")        
+    return list(string.ascii_uppercase)        
 
 
 class Key:
@@ -61,34 +61,42 @@ class MagicKey(Key):
     
     def mutate(self):
         rand_key = random.choice(list(self.uses.keys()))
-        self.uses[rand_key] = random.choice(get_letters())        
+        self.uses[rand_key] = random.choice(get_letters())  
+              
+        
+class Keyboard():         
 
-class Keyboard():
     
-    
-    # [ [[ab,cd],[ef,gh]], [hi,jk] ]
+    # [ [[ab,cd],[ef,gh]], [[hi,jk],[lm,no]] ]
     # "h", goal 7 => num_rows*col idx = 2*3 = 6 + rows_idx = 1 => 6 + 1
-    def flatten_3d(hand_idx, row_idx, col_idx, num_cols, num_rows):
-        column_number = hand_idx*num_cols + col_idx
-        return hand_idx * (num_cols * num_rows) + row_idx * num_cols + col_idx
+    punctuation_set = set(get_punctuation())    
+    non_letters_set = set(get_punctuation()+[MagicKey.MAGIC_LETTER])    
+    # def get_flattened_idx(self, hand_idx:int, col_idx:int, row_idx:int):
+    #     if self.keyboard == []:
+    #         raise Exception("Empty Keyboard")
+    #     cols_per_hand = len(self.keyboard[0])
+    #     num_rows = len(self.keyboard[0][0])
+    #     return hand_idx*cols_per_hand*num_rows + col_idx*num_rows + row_idx
 
-    def unflatten_3d(index, X, Y):
-        z = index // (X * Y)
-        y = (index % (X * Y)) // X
-        x = index % X
-        return z, y, x
+    # def get_unflattened_idx(self, idx:int) -> KeyboardLocation:
+    #     if self.keyboard == []:
+    #         raise Exception("Empty Keyboard")
+    #     cols_per_hand = len(self.keyboard[0])
+    #     num_rows = len(self.keyboard[0][0])
+    #     hand_idx = idx % (num_rows*cols_per_hand)
+    #     idx -= hand_idx*num_rows*cols_per_hand
+    #     row_idx = idx % num_rows
+    #     pass
+    def get_punctuation_locations(self) -> PunctuationOption:
+        result = []
+        for i, hand in enumerate(self.keyboard):
+            for j, col in enumerate(hand):
+                for k, key in enumerate(col):
+                    if key.letters[0] in self.punctuation_set:
+                        result.append((i, j, k))
 
-    # Example usage
-    Z, Y, X = 3, 4, 5  # Dimensions: Z × Y × X
-    z, y, x = 2, 1, 3  # 3D coordinates
 
-    # Flatten the 3D coordinates
-    index = flatten_3d(z, y, x, X, Y)
-    print(f"Flattened index: {index}")
-
-    # Unflatten the index back to 3D coordinates
-    z_unflat, y_unflat, x_unflat = unflatten_3d(index, X, Y)
-    print(f"Unflattened coordinates: {z_unflat}, {y_unflat}, {x_unflat}")   
+        return tuple(result)
     def __init__(self, layout: list[list[int]], kb: list[list[list[Key]]] = []) -> None:
         self.punctuation_location = (
             random.choice(PUNCTUATION_OPTIONS_2_SYMS) if USE_PUNCTUATION else []
@@ -105,7 +113,8 @@ class Keyboard():
             self.generate_random_keyboard(layout)
         else:
             self.keyboard = kb
-            
+            self.punctuation_location = self.get_punctuation_locations()
+        
     def magic_keys_str(self, space = " "):
         res = ""
         for i, (hand, col, row) in enumerate(self.magic_locations):
@@ -163,27 +172,24 @@ class Keyboard():
             for i, hand in enumerate(layout)
         ]
 
-        for letter in letters:
-            col, key, _ = self.get_random_letter_kb_index()
-            col[key].letters += letter
-
-    def get_random_letter_kb_index(self) -> tuple[list[Key], int, int]:
-        non_letters_set = set(get_punctuation()+[MagicKey.MAGIC_LETTER])
+        for hand in self.keyboard:
+            for col in hand:
+                for key in col:
+                    if len(letters) == 0:
+                        return
+                    elif key.letters[0] not in self.non_letters_set:
+                        key.letters+=letters.pop()
+                        
+    def get_random_letter_kb_index(self) -> tuple[Key, int]:
         while True:
             rand_hand = random.choice(self.keyboard)
             rand_col = random.choice(rand_hand)
-            rand_key_idx = random.randrange(len(rand_col))
-            rand_key = rand_col[rand_key_idx]
-            if rand_key is None:
-                print(f"rand_key is None at index {rand_key_idx} in column {rand_col}")
-            elif not hasattr(rand_key, 'letters'):
-                raise Exception(f"rand_key at index {rand_key_idx} in column {rand_col} does not have 'letters' attribute")
-
-            if all(char not in non_letters_set for char in rand_key.letters):
+            rand_key = random.choice(rand_col)
+            if all(char not in self.non_letters_set for char in rand_key.letters):
                 break
         if len(rand_key.letters) > 0:
             rand_letter_idx = random.randrange(len(rand_key.letters))
-            return (rand_col, rand_key_idx, rand_letter_idx)
+            return (rand_key, rand_letter_idx)
         else:
             raise Exception("Random key doesn't have any letters.")
 

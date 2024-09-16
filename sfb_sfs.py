@@ -3,7 +3,7 @@ import time
 from settings import SFB_SFS_DIFF_KEY_PENALTY, SFB_SFS_PINKY_PENALTY
 from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_row_dict, kb_to_reverse_column_dict, sort_str
-from words import get_bigrams, get_skipgrams
+from words import CorpusFrequencies, get_bigrams, get_skipgrams
 
 
 class SFBSFSEvaluator:
@@ -18,11 +18,13 @@ class SFBSFSEvaluator:
     def __init__(self, kb: Keyboard = None) -> None:
         if kb:
             self.set_kb(kb)
+        self.corpus_frequencies = CorpusFrequencies()
         self.bigrams = get_bigrams()
         self.skipgrams = get_skipgrams()
-        self.fast_bigrams:dict[str,float] = {}
+        self.fast_bigrams: dict[str, float] = {}
         self.set_fast_bigrams(self.bigrams, self.fast_bigrams)
         self.set_fast_skipgrams()
+        
 
     def set_kb(self, kb: Keyboard):
         self.column_dict = kb_to_column_dict(kb)
@@ -47,6 +49,7 @@ class SFBSFSEvaluator:
 
     def evaluate_bigrams_fast(self, bigrams: dict[str, float], multiplier: float):
         return self.evaluate_bigrams_fast_inner(bigrams, multiplier, True)
+
     def evaluate_bigrams_fast_inner(
         self, bigrams: dict[str, float], multiplier: float, use_mult: bool
     ):
@@ -56,7 +59,7 @@ class SFBSFSEvaluator:
                 for letter2 in keys[i + 1 :]:
                     key = sort_str(letter1 + letter2)
                     freq = bigrams[key] if bigrams.get(key) != None else 0
-                    multiplier_inner = multiplier
+                    multiplier_inner = multiplier / self.corpus_frequencies.bigrams_freq
                     if use_mult:
                         if finger == 0 or finger == 7:
                             multiplier_inner *= SFB_SFS_PINKY_PENALTY
@@ -65,12 +68,11 @@ class SFBSFSEvaluator:
                     sum += freq * multiplier_inner
         return sum
 
-    
     def evaluate_bigram_inner(
         self, bigram: tuple[str, float], multiplier: float, use_mult: bool
     ) -> float:
         bigram_str, bigram_freq = bigram
-
+        multiplier /= self.corpus_frequencies.bigrams_freq
         # We don't have to check this but it avoids adding a constant amount to all scores, so it saves time
         if bigram_str[1] == bigram_str[0]:
             return 0
@@ -97,10 +99,11 @@ class SFBSFSEvaluator:
             return 0
         if self.column_dict.get(bigram_str[1]) != self.column_dict.get(bigram_str[0]):
             return 0
-        if only_1u and self.row_dict.get(bigram_str[1]) == self.row_dict.get(bigram_str[0]):
+        if only_1u and self.row_dict.get(bigram_str[1]) == self.row_dict.get(
+            bigram_str[0]
+        ):
             return 0
-        return bigram_freq
-        
+        return bigram_freq / self.corpus_frequencies.bigrams_freq
 
     def evaluate_skipgram(self, skipgram: tuple[str, float, int]) -> float:
         skipgram_str, skipgram_frec, skipgram_level = skipgram
@@ -108,7 +111,9 @@ class SFBSFSEvaluator:
             (skipgram_str, skipgram_frec), 0.5 ** (skipgram_level + 1), True
         )
 
-    def evaluate_skipgram_stat(self, skipgram: tuple[str, float], only_1u: bool) -> float:
+    def evaluate_skipgram_stat(
+        self, skipgram: tuple[str, float], only_1u: bool
+    ) -> float:
         return self.evaluate_bigram_stat(skipgram, only_1u)
 
 
@@ -124,7 +129,7 @@ def test_speed():
                 [Key("g"), Key("h")],
                 [Key("j"), Key("k")],
             ],  # Second hand: two columns ('g', 'h') in column 0, ('j', 'k') in column 1
-        ]
+        ],
     )
     evaluator = SFBSFSEvaluator(kb)
     sfb = 0
@@ -139,22 +144,22 @@ def test_speed():
     sfs_start = time.time()
     for i, skipgrams in enumerate(evaluator.skipgrams):
         for skip_str, skip_freq in skipgrams.items():
-            sfs += evaluator.evaluate_skipgram((skip_str, skip_freq, i))    
+            sfs += evaluator.evaluate_skipgram((skip_str, skip_freq, i))
     sfs_end = time.time()
     sfs_fast = 0
     sfs_fast_start = time.time()
     for i, skipgrams in enumerate(evaluator.fast_skipgrams):
-        sfs_fast+=evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
+        sfs_fast += evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
     sfs_fast_end = time.time()
-    
-    # print(sfs_fast)
-    assert abs(sfb_fast - sfb) < sys.float_info.epsilon
-    assert abs(sfs_fast - sfs) < sys.float_info.epsilon
+
+    # print(sfb)
+    # print(sfb_fast)
+    assert abs(sfb_fast - sfb) < 0.00001
+    assert abs(sfs_fast - sfs) < 0.00001
     # print(f"Regular sfb took {1000*(sfb_end-sfb_start):.3f}")
     # print(f"Fast sfb took {1000*(sfb_fast_end-sfb_fast_start):.3f}")
     # print(f"Regular sfs took {1000*(sfs_end-sfs_start):.3f}")
-    # print(f"Fast sfs took {1000*(sfs_fast_end-sfs_fast_start):.3f}")    
-    
+    # print(f"Fast sfs took {1000*(sfs_fast_end-sfs_fast_start):.3f}")
 
 
 def test_evaluate_sfb():
@@ -170,7 +175,7 @@ def test_evaluate_sfb():
                 [Key("g"), Key("h")],
                 [Key("j"), Key("k")],
             ],  # Second hand: two columns ('g', 'h') in column 0, ('j', 'k') in column 1
-        ]
+        ],
     )
     grams = {
         "as": 0.05,
@@ -195,8 +200,8 @@ def test_evaluate_sfb():
 
     # print(res_sfb_fast)
     # print(res_sfb)
-    assert res_sfb_fast == res_sfb
-    assert res_sfs_fast == res_sfs
+    assert abs(res_sfb_fast - res_sfb) < 0.00001
+    assert abs(res_sfs_fast - res_sfs) < 0.00001
     # print("test_evaluate_sfb passed!")
 
 
