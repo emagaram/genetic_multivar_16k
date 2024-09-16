@@ -107,9 +107,11 @@ class SFBSFSEvaluator:
 
     def evaluate_skipgram(self, skipgram: tuple[str, float, int]) -> float:
         skipgram_str, skipgram_frec, skipgram_level = skipgram
+        # 0.5436 because 0.5436^1 + 0.5436^2 + 0.5436^3 = 1
         return self.evaluate_bigram_inner(
-            (skipgram_str, skipgram_frec), 0.5 ** (skipgram_level + 1), True
+            (skipgram_str, skipgram_frec), 0.5436 ** (skipgram_level + 1), True
         )
+        
 
     def evaluate_skipgram_stat(
         self, skipgram: tuple[str, float], only_1u: bool
