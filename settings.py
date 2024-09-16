@@ -1,7 +1,6 @@
 from enum import Enum
 
-
-class Mode(Enum):
+class InaccuracyMode(Enum):
     IGNORE_FIRST = "Ignore First"
     ONLY_FIRST = "Only First"
     ONLY_LAST = "Only Last"
@@ -9,16 +8,17 @@ class Mode(Enum):
     ALL = "All"
 
 
-PRINT = False
-MODE = Mode.IGNORE_FIRST
+PRINT = True
+MODE = InaccuracyMode.IGNORE_FIRST
 USE_PUNCTUATION = True
+NUM_MAGIC = 1
 
-INACCURACY_WEIGHT = 10
-SFB_WEIGHT = 1
-REDIRECT_WEIGHT = 0.25
-DISCOMFORT_WEIGHT = 0.25
-SFS_WEIGHT = 0.25
-FINGER_FREQ_WEIGHT = 0.1
+INACCURACY_WEIGHT = 1
+SFB_WEIGHT = 0.01
+REDIRECT_WEIGHT = 0.025
+DISCOMFORT_WEIGHT = 0.025
+SFS_WEIGHT = 0.025
+FINGER_FREQ_WEIGHT = 0.0005
 
 # Discomfort
 PINKY_ABOVE_RING = 3

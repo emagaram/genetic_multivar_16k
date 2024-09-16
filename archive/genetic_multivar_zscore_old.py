@@ -107,8 +107,8 @@ def mutate(kb: RandomKeyboard):
 
         # Swap
         if random.random() < 0.5:
-            a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-            b_col, b_key, b_letter = kb.get_random_non_punc_kb_index()
+            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+            b_col, b_key, b_letter = kb.get_random_letter_kb_index()
             # while a_letter == -1:
             #     a_col, a_key, a_letter = get_random_kb_index(kb)
             # while b_letter == -1:
@@ -119,11 +119,11 @@ def mutate(kb: RandomKeyboard):
             b_col[b_key] = b_col[b_key].replace(b_char, a_char, 1)
         # Move
         else:
-            a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-            b_col, b_key, _ = kb.get_random_non_punc_kb_index()
+            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+            b_col, b_key, _ = kb.get_random_letter_kb_index()
             while a_col[a_key] == b_col[b_key] or len(a_col[a_key]) == 1:
-                a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-                b_col, b_key, _ = kb.get_random_non_punc_kb_index()
+                a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+                b_col, b_key, _ = kb.get_random_letter_kb_index()
             a_char = a_col[a_key][a_letter]
             a_col[a_key] = a_col[a_key].replace(a_char, "", 1)
             b_col[b_key] += a_char

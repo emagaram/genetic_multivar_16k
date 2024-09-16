@@ -5,15 +5,17 @@ import os
 import string
 from typing import Optional
 from custom_types import FreqList
-from keyboard import Keyboard
-from settings import MODE, Mode
+from keyboard import Keyboard, MagicKey, get_t10_keys
+from settings import MODE, InaccuracyMode
 from util import sort_str
 from words import create_inaccuracy_freq_list, get_letters_and_punctuation
 
 
 class InaccuracyEvaluator:
+    
+    
     SHARED_KEY_PENALTIES_FILE = "./shared_key_penalties.json"
-
+    
     def __init__(self, freq_list: FreqList):
         self.kb: Keyboard = None
         self.shared_key_penalties: dict[str, float] = {}
@@ -23,6 +25,7 @@ class InaccuracyEvaluator:
 
     def set_kb(self, kb: Keyboard):
         self.kb = kb
+        self.kb_config=self.kb_to_config()
 
     def set_shared_key_penalties(self):
         if os.path.isfile(self.SHARED_KEY_PENALTIES_FILE):
@@ -77,9 +80,18 @@ class InaccuracyEvaluator:
         for hand in self.kb.keyboard:
             for col in hand:
                 for key in col:
-                    for i, l1 in enumerate(key):
-                        for l2 in key[i + 1 :]:
-                            score += self.shared_key_penalties[sort_str(l1 + l2)]
+                    for i, l1 in enumerate(key.letters):
+                        for l2 in key.letters[i + 1 :]:
+                            bigram = sort_str(l1 + l2)
+                            magic_keys:list[MagicKey] = (self.kb.keyboard[hand][row][col] for hand, row, col in self.kb.magic_locations)
+                            should_add = True
+                            for key in magic_keys:
+                                k0 = key.uses[self.kb_config[bigram[0]]]
+                                k1 = key.uses[self.kb_config[bigram[1]]]
+                                if  k0 == bigram[1] or k0 == bigram[0] or k1 == bigram[1] or k1 == bigram[0]:
+                                    should_add = False
+                            
+                            score += self.shared_key_penalties[bigram] if should_add else 0
                             if score > best:
                                 return score
         # print(f"Heuristic took {count} iterations")
@@ -88,7 +100,7 @@ class InaccuracyEvaluator:
     def evaluate_inaccuracy_mode(
         self,
         best: float,
-        mode: Mode
+        mode: InaccuracyMode
     ) -> float:
         if self.kb == None:
             raise Exception("Inaccuracy evaluator has no keyboard")
@@ -110,12 +122,11 @@ class InaccuracyEvaluator:
     ) -> float:
         if self.kb == None:
             raise Exception("Inaccuracy evaluator has no keyboard")
-        config = self.kb_to_config()
         score = 0
         index_count = {}
 
         for word, value in self.freq_list:
-            t10_word = self.word_to_t10_word(word, config)
+            t10_word = self.word_to_t10_word(word, self.kb_config)
             count = index_count.get(t10_word, 0)
             score += value * min(4, count)
             index_count[t10_word] = count + 1
@@ -138,14 +149,14 @@ class InaccuracyEvaluator:
         return textonyms
 
     def kb_to_config(self) -> dict[str, str]:
-        keys = list(string.ascii_uppercase + ";")
+        keys = get_t10_keys()
         char_index = 0
         res = {}
         seen = set()
         for hand in self.kb.keyboard:
             for col in hand:
                 for key in col:
-                    for char in key:
+                    for char in key.letters:
                         res[char] = keys[char_index]
                         seen.add(char)
                     char_index += 1
@@ -160,18 +171,31 @@ class InaccuracyEvaluator:
 
 
     # Function to convert words to T10 digits
-    def word_to_t10_mode(self, word: str, t10_config: dict[str, str], mode: Mode):
-        if mode == Mode.IGNORE_FIRST:
+    def word_to_t10_mode(self, word: str, t10_config: dict[str, str], mode: InaccuracyMode):
+        magic_keys:list[MagicKey] = [self.kb.keyboard[hand][col][row] for hand, col, row in self.kb.magic_locations]
+        def magic_has(current_char: str, prev_t10_key: str):
+            for magic_key in magic_keys:
+                if magic_key.uses[prev_t10_key] == current_char:
+                    return True
+            return False
+        def append_char(lst:list[str], t10_config:dict[str,str], current_char:str, prev_char: str):
+                if magic_has(current_char, t10_config[prev_char]):
+                    lst.append(current_char)
+                else:
+                    lst.append(t10_config[current_char])
+        if mode == InaccuracyMode.IGNORE_FIRST:
             t10_word = [word[0]]
-            for letter in word[1:]:
-                t10_word.append(t10_config[letter])
+            for i, letter in enumerate(word[1:], start=1):
+                append_char(t10_word, t10_config, word[i], word[i-1])
+            # for letter in word[1:]:
+            #     t10_word.append(self.kb_config[letter])
             return "".join(t10_word)            
-        elif mode == Mode.ONLY_FIRST:
+        elif mode == InaccuracyMode.ONLY_FIRST:
             t10_word = [t10_config[word[0]]]
             for letter in word[1:]:
                 t10_word.append(letter)
             return "".join(t10_word)         
-        elif mode == Mode.MIDDLE:
+        elif mode == InaccuracyMode.MIDDLE:
             t10_word = [word[0]]
             if len(word) > 2:    
                 for letter in word[1:-1]:
@@ -179,14 +203,14 @@ class InaccuracyEvaluator:
             if len(word) > 1:
                 t10_word.append(word[-1])
             return "".join(t10_word)
-        elif mode == Mode.ALL:
+        elif mode == InaccuracyMode.ALL:
             t10_word = []
             for letter in word:
                 t10_word.append(t10_config[letter])
             return "".join(t10_word)            
 
 
-    def get_t10_config_guess_percentage(self, mode: Mode, space="") -> str:
+    def get_t10_config_guess_percentage(self, mode: InaccuracyMode, space="") -> str:
         t10_config = self.kb_to_config()
         # Initialize dictionary to store guess counts
         total_freq = 0
@@ -211,6 +235,13 @@ class InaccuracyEvaluator:
             res += f"{space}{['First', 'Second', 'Third', 'Fourth', 'Fifth'][i]} guess percentage: {count*100/total_freq:.3f}%\n"
         return res
 
+    def sample_n_words(self, n:int, mode: InaccuracyMode, space = " "):
+        res = ""
+        for word, _ in self.freq_list[:n]:
+            t10_word = self.word_to_t10_mode(word, self.kb_config, mode)
+            res+=f"{space}{word}:{t10_word}\n"
+        return res
+            
 
 def test_inaccuracy_evaluator():
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())

@@ -1,7 +1,7 @@
 import sys
 import time
 from settings import SFB_SFS_DIFF_KEY_PENALTY, SFB_SFS_PINKY_PENALTY
-from keyboard import Keyboard
+from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_row_dict, kb_to_reverse_column_dict, sort_str
 from words import get_bigrams, get_skipgrams
 
@@ -114,14 +114,15 @@ class SFBSFSEvaluator:
 
 def test_speed():
     kb: Keyboard = Keyboard(
-        [
+        [[2, 2], [2, 2]],
+        kb=[
             [
-                ["a", "s"],
-                ["d", "f"],
+                [Key("a"), Key("s")],
+                [Key("d"), Key("f")],
             ],  # First hand: two columns ('a', 's') in column 0, ('d', 'f') in column 1
             [
-                ["g", "h"],
-                ["j", "k"],
+                [Key("g"), Key("h")],
+                [Key("j"), Key("k")],
             ],  # Second hand: two columns ('g', 'h') in column 0, ('j', 'k') in column 1
         ]
     )
@@ -158,15 +159,16 @@ def test_speed():
 
 def test_evaluate_sfb():
     # Define a sample keyboard layout
-    kb1: Keyboard = Keyboard(
-        [
+    kb: Keyboard = Keyboard(
+        [[2, 2], [2, 2]],
+        kb=[
             [
-                ["a", "s"],
-                ["d", "f"],
+                [Key("a"), Key("s")],
+                [Key("d"), Key("f")],
             ],  # First hand: two columns ('a', 's') in column 0, ('d', 'f') in column 1
             [
-                ["g", "h"],
-                ["j", "k"],
+                [Key("g"), Key("h")],
+                [Key("j"), Key("k")],
             ],  # Second hand: two columns ('g', 'h') in column 0, ('j', 'k') in column 1
         ]
     )
@@ -180,7 +182,7 @@ def test_evaluate_sfb():
     }
     res_sfb = 0
     res_sfs = 0
-    evaluator1 = SFBSFSEvaluator(kb1)
+    evaluator1 = SFBSFSEvaluator(kb)
     for bigram, freq in grams.items():
         res_sfb += evaluator1.evaluate_bigram((bigram, freq))
         res_sfs += evaluator1.evaluate_skipgram((bigram, freq, 0))

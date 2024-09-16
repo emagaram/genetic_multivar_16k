@@ -1,4 +1,4 @@
-from keyboard import Keyboard
+from keyboard import Key, Keyboard
 from custom_types import FreqList
 from words import create_inaccuracy_freq_list
 
@@ -19,7 +19,7 @@ class FingerFreqEvaluator:
                 sum(
                     self.frequencies[char] if char in self.frequencies else 0
                     for key in col
-                    for char in key
+                    for char in key.letters
                 )
                 for col in hand
             ]
@@ -82,7 +82,7 @@ def test_evaluate_letter_freq():
     assert abs(result["b"] - 0.05) < epsilon
     assert abs(result["c"] - 0.05) < epsilon
     assert abs(result["n"] - 0.3) < epsilon
-    kb: Keyboard = Keyboard([["ab", "c", "d", "e", "f"], ["g", "h", "i", "j", "k"]])
+    kb: Keyboard = Keyboard([[Key("ab"), Key("c"), Key("d"), Key("e"), Key("f")], [Key("g"), Key("h"), Key("i"), Key("j"), Key("k")]])
     ff.set_kb(kb)
     finger_freqs = ff.get_finger_frequencies()
     assert abs(finger_freqs[0][0] - 0.65) < epsilon

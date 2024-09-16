@@ -66,6 +66,9 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     redirect_sum = sum(redirect_evaluator.evaluate_trigram_stat(trigram) for trigram in redirect_evaluator.trigrams.items())
     res+=f"Redirects: {redirect_sum*100:.3f}%\n\n"
     
+    n = 100
+    res+=f"{n} words evaluated\n"
+    res+=inaccuracy_evaluator.sample_n_words(n, MODE, space)
     # Top textonyms
     res+=f"Top Texonyms Max:\n"
     top_textonyms = inaccuracy_evaluator.get_textonyms_heap()

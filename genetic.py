@@ -13,12 +13,12 @@ from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 from discomfort import DiscomfortEvaluator
 from get_stats import get_score_stats
-from inaccuracy import InaccuracyEvaluator, Mode
+from inaccuracy import InaccuracyEvaluator, InaccuracyMode
 from score_categories import Categories
 import settings
 
 from finger_freq import FingerFreqEvaluator
-from keyboard import RandomKeyboard, Keyboard
+from keyboard import Keyboard, MagicKey
 from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from words import create_full_freq_list, create_inaccuracy_freq_list
@@ -56,6 +56,7 @@ def write_best_kb_to_file(
     with open(full_path, "w") as file:
         file.write(str(kb) + "\n")
         file.write(get_score_stats(kb, performance))
+        file.write("")
         file.write(settings.settings_to_str(space))
 
 
@@ -79,27 +80,32 @@ punctuation_options_2_symbols: list[
 
 
 # Moves a letter to another key
-def mutate(kb: RandomKeyboard, change_big: bool):
-    loops = random.randint(1, 5) if not change_big else random.randint(3, 15)
+def mutate(kb: Keyboard, is_good: bool):
+    loops = random.randint(1, 3) if is_good else random.randint(5, 10)
     for _ in range(loops):
-
-        # Swap
-        if random.random() < 0.5:
-            a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-            b_col, b_key, b_letter = kb.get_random_non_punc_kb_index()
-            a_char = a_col[a_key][a_letter]
-            b_char = b_col[b_key][b_letter]
-            a_col[a_key] = a_col[a_key].replace(a_char, b_char, 1)
-            b_col[b_key] = b_col[b_key].replace(b_char, a_char, 1)
+        rand = random.random()
+        if rand < 0.3 and len(kb.magic_locations) > 0:
+            hand, col, row = random.choice(kb.magic_locations)
+            mk:MagicKey = kb.keyboard[hand][col][row]
+            mk.mutate()
+        # Swap            
+        elif rand <= 1:
+            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+            b_col, b_key, b_letter = kb.get_random_letter_kb_index()
+            a_char = a_col[a_key].letters[a_letter]
+            b_char = b_col[b_key].letters[b_letter]
+            a_col[a_key].letters = a_col[a_key].letters.replace(a_char, b_char, 1)
+            b_col[b_key].letters = b_col[b_key].letters.replace(b_char, a_char, 1)
         # Move
         else:
-            a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-            b_col, b_key, _ = kb.get_random_non_punc_kb_index()
-            while a_col[a_key] == b_col[b_key] or len(a_col[a_key]) == 1:
-                a_col, a_key, a_letter = kb.get_random_non_punc_kb_index()
-            a_char = a_col[a_key][a_letter]
-            a_col[a_key] = a_col[a_key].replace(a_char, "", 1)
-            b_col[b_key] += a_char
+            print("How?")
+            a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+            b_col, b_key, _ = kb.get_random_letter_kb_index()
+            while a_col[a_key] == b_col[b_key] or len(a_col[a_key].letters) == 1:
+                a_col, a_key, a_letter = kb.get_random_letter_kb_index()
+            a_char = a_col[a_key].letters[a_letter]
+            a_col[a_key].letters = a_col[a_key].letters.replace(a_char, "", 1)
+            b_col[b_key].letters += a_char
 
 
 def write_generations_completed(base_path: str, process_id: str, generations: int):
@@ -254,8 +260,8 @@ def run_simulation(
         level=logging.ERROR,
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
-    population: list[RandomKeyboard] = [
-        RandomKeyboard(layout) for _ in range(POPULATION_SIZE)
+    population: list[Keyboard] = [
+        Keyboard(layout) for _ in range(POPULATION_SIZE)
     ]
     generation_count = 1
     total_generation_count = 0
@@ -263,7 +269,7 @@ def run_simulation(
     while not stop_event.is_set():
         if stop_event.is_set():
             break
-        scored_population: list[tuple[float, RandomKeyboard]] = []
+        scored_population: list[tuple[float, Keyboard]] = []
 
         # Called when no new improvements have been made in a while
         if solution_improvement_count > SOLUTION_IMPROVEMNT_DEADLINE:
@@ -278,7 +284,7 @@ def run_simulation(
             generation_count = 1
             solution_improvement_count = 0
             current_best_score = sys.float_info.max
-            population = [RandomKeyboard(layout) for _ in range(POPULATION_SIZE)]
+            population = [Keyboard(layout) for _ in range(POPULATION_SIZE)]
 
         start_time = time.time()  # Start timing the generation
         for kb in population:
@@ -310,6 +316,7 @@ def run_simulation(
 
         # Sort the population based on the score (lower is better)
         scored_population.sort(key=lambda x: x[0])
+        avg = sum(score for score, _ in scored_population)/len(scored_population)
         end_time = time.time()
         if settings.PRINT:
             print(
@@ -324,11 +331,13 @@ def run_simulation(
             copy.deepcopy(config)
             for _, config in scored_population[: len(scored_population) // 4]
         ]
-        random.shuffle(scored_population)
+        random.shuffle(scored_population)       
+        
         while len(next_population) < POPULATION_SIZE:
-            _, kb = scored_population.pop()
-            mutate(kb, solution_improvement_count > 0.75*SOLUTION_IMPROVEMNT_DEADLINE)
+            score, kb = scored_population.pop()
+            mutate(kb, score < avg)
             next_population.append(kb)
+        
         population = next_population
 
 
@@ -342,8 +351,8 @@ if __name__ == "__main__":
     termination_thread.start()
 
     # Modify your main script logic here
-    # int(cpu_count())
-    num_processes = 4
+    # int(cpu_count()
+    num_processes = 1
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 

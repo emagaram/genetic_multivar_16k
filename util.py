@@ -12,19 +12,19 @@ def kb_to_column_dict(kb: Keyboard) -> dict[str, int]:
     for hand in kb.keyboard:
         for col in hand:
             for key in col:
-                for char in key:
+                for char in key.letters:
                     res[char] = index
             index += 1
     return res
 
 
-def kb_to_reverse_column_dict(kb) -> dict[int, str]:
+def kb_to_reverse_column_dict(kb:Keyboard) -> dict[int, str]:
     res:dict[int, str] = {}
     index = 0
     for hand in kb.keyboard:
         for col in hand:
             for key in col:
-                for char in key:
+                for char in key.letters:
                     if res.get(index) == None:
                         res[index] = char
                     else:
@@ -38,7 +38,7 @@ def kb_to_row_dict(kb: Keyboard) -> dict[str, int]:
     for hand in kb.keyboard:
         for col in hand:
             for i, key in enumerate(col):
-                for char in key:
+                for char in key.letters:
                     res[char] = i
     return res
 
