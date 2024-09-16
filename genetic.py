@@ -373,7 +373,7 @@ if __name__ == "__main__":
 
     # Modify your main script logic here
     # int(cpu_count()
-    num_processes = 4
+    num_processes = 1
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 

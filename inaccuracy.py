@@ -26,8 +26,9 @@ class InaccuracyEvaluator:
         self.shared_key_penalties: dict[str, float] = {}
         self.bigrams = {}
         self.freq_list = freq_list
-        self.set_shared_key_penalties()
         self.corpus_frequencies = CorpusFrequencies()
+        self.set_shared_key_penalties()
+        
 
     def set_kb(self, kb: Keyboard):
         self.kb = kb
