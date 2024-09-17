@@ -11,12 +11,11 @@ from settings import GOAL_FINGER_FREQ, GOAL_FINGER_MAX, MODE, InaccuracyMode
 
 def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     space = "  "
-    res = f"Inaccuracy Mode: {MODE.value}\n"
+    res = f"Inaccuracy Mode: {MODE.value}\nRaw Scores:\n"
     
     
     for stat_name, raw_score in performance.items():
-        res+=f"{stat_name.capitalize()}:\n"
-        res+=f"{space}raw score: {raw_score}\n"
+        res+=f"{space}{stat_name.capitalize()}: {raw_score}:\n"
     res+="\n"
     
     # Finger usage

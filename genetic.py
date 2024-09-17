@@ -82,9 +82,9 @@ punctuation_options_2_symbols: list[
 # Moves a letter to another key
 def mutate(kb: Keyboard, is_good: bool):
     # Idk for this
-    loops = random.randint(1, 3) if is_good else random.randint(2, 6)
+    num_loops = random.randint(1, 3) if is_good else random.randint(2, 6)
 
-    for _ in range(loops):
+    for _ in range(num_loops):
         rand = random.random()
         if rand < 0.3 and len(kb.magic_locations) > 0:
             hand, col, row = random.choice(kb.magic_locations)
@@ -112,14 +112,14 @@ def mutate(kb: Keyboard, is_good: bool):
                     for letter in key.letters
                 )
 
-            def get_random_letter_col():
+            def get_random_letter_col() -> list[Key]:
                 while True:
                     col = random.choice(random.choice(kb.keyboard))
                     if has_only_letters(col):
                         return col
 
-            col_a = get_random_letter_col(kb)
-            col_b = get_random_letter_col(kb)
+            col_a = get_random_letter_col()
+            col_b = get_random_letter_col()
             for key_a, key_b in zip(col_a, col_b):
                 temp = key_a.letters
                 key_a.letters = key_b.letters
@@ -261,7 +261,7 @@ def calculate_kb_score(
         #     print()
         # print( f"Discomfort pct: {100*(discomfort_te-discomfort_ts)/(total_te-total_ts)}%" )
         scores_cache[kb] = {
-            "score": score,
+            "Total": score,
             Categories.FINGERFREQ.value: fingerfreq_sum,
             Categories.INACCURACY.value: inaccuracy_sum,
             Categories.DISCOMFORT.value: discomfort_sum,
@@ -393,7 +393,7 @@ if __name__ == "__main__":
 
     # Modify your main script logic here
     # int(cpu_count()
-    num_processes = 1
+    num_processes = 4
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 

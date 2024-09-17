@@ -9,7 +9,7 @@ class InaccuracyMode(Enum):
     ALL = "All"
 
 
-PRINT = False
+PRINT = True
 MODE = InaccuracyMode.IGNORE_FIRST
 USE_PUNCTUATION = True
 NUM_MAGIC = 0
@@ -90,15 +90,12 @@ Good Rolls:
 {space}ADJACENT_BONUS = 1.05
 
 Finger Frequencies:
-{space}PINKY_WEIGHT = {PINKY_WEIGHT}
-{space}RING_WEIGHT = {RING_WEIGHT}
-{space}MIDDLE_WEIGHT = {MIDDLE_WEIGHT}
-{space}INDEX_WEIGHT = {INDEX_WEIGHT}
-{space}GOAL_FINGER_FREQ = [
-    [{GOAL_FINGER_FREQ[0][0]:.5f}, {GOAL_FINGER_FREQ[0][1]:.5f}, {GOAL_FINGER_FREQ[0][2]:.5f}, {GOAL_FINGER_FREQ[0][3]:.5f}],
-    [{GOAL_FINGER_FREQ[1][0]:.5f}, {GOAL_FINGER_FREQ[1][1]:.5f}, {GOAL_FINGER_FREQ[1][2]:.5f}, {GOAL_FINGER_FREQ[1][3]:.5f}],
-    
+{space}PINKY_MAX = {PINKY_MAX}
+{space}RING_MAX = {RING_MAX}
+{space}MIDDLE_MAX = {MIDDLE_MAX}
+{space}INDEX_MAX = {INDEX_MAX}
+
 Rolls
 INWARD_BONUS = {INWARD_BONUS}
 ADJACENT_BONUS = {ADJACENT_BONUS}
-]"""
+"""
