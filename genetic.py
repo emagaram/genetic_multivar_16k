@@ -19,8 +19,8 @@ import settings
 
 from finger_freq import FingerFreqEvaluator
 from keyboard import Key, Keyboard, MagicKey
-from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
+from rolls_alts_redirects import RAREvaluator
 from words import create_full_freq_list, create_inaccuracy_freq_list
 
 
@@ -92,10 +92,14 @@ def mutate(kb: Keyboard, is_good: bool):
             mk.mutate()
         # Swap letter
         elif rand < 0.7:
-            a_key, a_letter_idx = kb.get_random_letter_kb_index()
-            b_key, b_letter_idx = kb.get_random_letter_kb_index()
-            a_char = a_key.letters[a_letter_idx]
-            b_char = b_key.letters[b_letter_idx]
+            while True:
+                a_key, a_letter_idx = kb.get_random_letter_kb_index()
+                b_key, b_letter_idx = kb.get_random_letter_kb_index()
+                a_char = a_key.letters[a_letter_idx]
+                b_char = b_key.letters[b_letter_idx]
+                # We could write some logic to allow swapping apostrophe but it isn't worth it
+                if (a_char != "'" and b_char != "'"):
+                    break              
             a_key.letters = a_key.letters.replace(a_char, b_char, 1)
             b_key.letters = b_key.letters.replace(b_char, a_char, 1)
         # Swap column
@@ -156,7 +160,7 @@ def calculate_kb_score(
     finger_freq_evaluator: FingerFreqEvaluator,
     sfb_evaluator: SFBSFSEvaluator,
     discomfort_evaluator: DiscomfortEvaluator,
-    redirect_evaluator: RedirectEvaluator,
+    rar_evaluator: RAREvaluator,
     inaccuracy_evaluator: InaccuracyEvaluator,
 ) -> dict[str, float]:
 
@@ -167,11 +171,15 @@ def calculate_kb_score(
         finger_freq_evaluator.set_kb(kb)
         sfb_evaluator.set_kb(kb)
         discomfort_evaluator.set_kb(kb)
-        redirect_evaluator.set_kb(kb)
+        rar_evaluator.set_kb(kb)
         inaccuracy_evaluator.set_kb(kb)
         # set_te = time.time()
         score = 0
-
+        # redirect_ts = time.time()
+        good_rolls_sum, redirect_sum = rar_evaluator.evaluate_rolls_redirects()
+        score += settings.REDIRECT_WEIGHT * redirect_sum
+        score -= settings.GOOD_ROLLS_WEIGHT * good_rolls_sum
+        
         fingerfreq_sum = (
             finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
         )
@@ -184,7 +192,7 @@ def calculate_kb_score(
         # sfs_ts = time.time()
 
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
-            sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i, True)
+            sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i)
             if score + settings.SFS_WEIGHT * sfs_sum > best:
                 break
         # sfs_te = time.time()
@@ -198,11 +206,7 @@ def calculate_kb_score(
         # discomfort_te = time.time()
         score += settings.DISCOMFORT_WEIGHT * discomfort_sum
 
-        # redirect_ts = time.time()
-        minimum_failing_redirect_score = (best - score) / settings.REDIRECT_WEIGHT
-        redirect_sum = redirect_evaluator.evaluate_fast(minimum_failing_redirect_score)
-        # redirect_te = time.time()
-        score += settings.REDIRECT_WEIGHT * redirect_sum
+
         # inaccuracy_ts = time.time()
         minimum_failing_inaccuracy_score = (best - score) / settings.INACCURACY_WEIGHT
         inaccuracy_sum = 0
@@ -249,6 +253,7 @@ def calculate_kb_score(
             Categories.SFB.value: sfb_sum,
             Categories.SFS.value: sfs_sum,
             Categories.REDIRECT.value: redirect_sum,
+            Categories.GOOD_ROLLS.value: good_rolls_sum,
         }
     return scores_cache[kb]
 
@@ -270,7 +275,7 @@ def run_simulation(
     # print(finger_freq_evaluator)
     sfb_evaluator = SFBSFSEvaluator()
     discomfort_evaluator = DiscomfortEvaluator()
-    redirect_evaluator = RedirectEvaluator()
+    rar_evaluator = RAREvaluator()
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     scores_cache: dict[Keyboard, dict[str, tuple[float, float]]] = {}
     errors_path = os.path.join(iteration_path, "errors")
@@ -316,7 +321,7 @@ def run_simulation(
                 finger_freq_evaluator,
                 sfb_evaluator,
                 discomfort_evaluator,
-                redirect_evaluator,
+                rar_evaluator,
                 inaccuracy_evaluator,
             )
             score = performance["score"]

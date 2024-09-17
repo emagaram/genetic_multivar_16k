@@ -67,26 +67,8 @@ class MagicKey(Key):
 class Keyboard():         
 
     
-    # [ [[ab,cd],[ef,gh]], [[hi,jk],[lm,no]] ]
-    # "h", goal 7 => num_rows*col idx = 2*3 = 6 + rows_idx = 1 => 6 + 1
     punctuation_set = set(get_punctuation())    
     non_letters_set = set(get_punctuation()+[MagicKey.MAGIC_LETTER])    
-    # def get_flattened_idx(self, hand_idx:int, col_idx:int, row_idx:int):
-    #     if self.keyboard == []:
-    #         raise Exception("Empty Keyboard")
-    #     cols_per_hand = len(self.keyboard[0])
-    #     num_rows = len(self.keyboard[0][0])
-    #     return hand_idx*cols_per_hand*num_rows + col_idx*num_rows + row_idx
-
-    # def get_unflattened_idx(self, idx:int) -> KeyboardLocation:
-    #     if self.keyboard == []:
-    #         raise Exception("Empty Keyboard")
-    #     cols_per_hand = len(self.keyboard[0])
-    #     num_rows = len(self.keyboard[0][0])
-    #     hand_idx = idx % (num_rows*cols_per_hand)
-    #     idx -= hand_idx*num_rows*cols_per_hand
-    #     row_idx = idx % num_rows
-    #     pass
     def get_punctuation_locations(self) -> PunctuationOption:
         result = []
         for i, hand in enumerate(self.keyboard):
@@ -134,8 +116,9 @@ class Keyboard():
                     res += " " if k != len(col) - 1 else ""
                 res += space if j != len(hand) - 1 else ""
             res += f"{space}|{space}" if i != len(self.keyboard) - 1 else ""
-        res+="\nMagic:\n"
-        res+=self.magic_keys_str()
+        if settings.NUM_MAGIC > 0:
+            res+="\nMagic:\n"
+            res+=self.magic_keys_str()
         return res
 
     def __eq__(self, other):

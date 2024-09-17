@@ -5,22 +5,21 @@ from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_reverse_column_dict
 from words import CorpusFrequencies, get_trigrams
 
+# Old class, not used
 
-class RedirectEvaluator:
+class RedirectsEvaluator:
     def generate_redirect_indexes(n):
         result = []
         for i in range(n + 1):
             for j in range(n + 1):
                 for k in range(n + 1):
-                    if (i < j > k) or (i > j < k):
+                    if ((i < j > k) or (i > j < k)) and (i!=j!=k):
                         result.append((i, j, k))
         return result
 
     POSITIONS_TO_EVAL: list[tuple[int, int, int]] = generate_redirect_indexes(3)
 
     def __init__(self, kb: Keyboard = None) -> None:
-        column_dict = {}
-        trigrams: dict[str, float] = {}
         if kb:
             self.set_kb(kb)
         self.trigrams = get_trigrams()
@@ -45,13 +44,12 @@ class RedirectEvaluator:
 
         score = 0
         for hand_i, hand in enumerate(reverse_column_dict):
-            for i, j, k in RedirectEvaluator.POSITIONS_TO_EVAL:
+            for i, j, k in RedirectsEvaluator.POSITIONS_TO_EVAL:
                 for char1 in hand[i]:
                     for char2 in hand[j]:
                         for char3 in hand[k]:
                             freq = self.trigrams.get(char1 + char2 + char3)
                             if freq != None:
-                                freq /= self.corpus_frequencies.trigrams_freq
                                 if (
                                     not use_mult
                                     or is_index(hand_i, i)
@@ -63,7 +61,7 @@ class RedirectEvaluator:
                                     score += freq * BAD_REDIRECT
                                 if score > max:
                                     return score
-        return score
+        return score / self.corpus_frequencies.trigrams_freq
 
     def evaluate_trigram_inner(self, trigram: tuple[str, float], use_mult: bool):
         def on_same_hand(col0: int, col1: int, col2: int):
@@ -71,15 +69,17 @@ class RedirectEvaluator:
                 col0 > 3 and col1 > 3 and col2 > 3
             )
 
-        def is_index(col: int):
+        def is_index_finger(col: int):
             return col == 3 or col == 4
 
-        col0, col1, col2 = (self.column_dict[char] for char in trigram[0])
+        col0, col1, col2 = (self.column_dict.get(char) for char in trigram[0])
+        if col0 == None or col1 == None or col2 == None:
+            return 0
         if not on_same_hand(col0, col1, col2):
             return 0
         # Right and then left, left and then right
         if (col1 > col0 and col1 > col2) or (col1 < col0 and col2 > col1):
-            if not use_mult or (is_index(col0) or is_index(col1) or is_index(col2)):
+            if not use_mult or (is_index_finger(col0) or is_index_finger(col1) or is_index_finger(col2)):
                 return trigram[1] / self.corpus_frequencies.trigrams_freq
             else:
                 return trigram[1] * BAD_REDIRECT / self.corpus_frequencies.trigrams_freq
@@ -110,7 +110,7 @@ def test_redirect():
             ],
         ],
     )
-    redirect_eval = RedirectEvaluator(keyboard)
+    redirect_eval = RedirectsEvaluator(keyboard)
     # TODO remove CorpusFrequencies and just bake it into all data
     # assert redirect_eval.evaluate_trigram(("aca", 2)) == 2 * BAD_REDIRECT
     # assert redirect_eval.evaluate_trigram(("acc", 2)) == 0
@@ -123,7 +123,7 @@ def test_redirect():
     # assert redirect_eval.evaluate_trigram(("gag", 2)) == 2
 
     random_kb = Keyboard([[2, 2, 2, 2], [2, 2, 2, 2]])
-    redirect_eval = RedirectEvaluator(random_kb)
+    redirect_eval = RedirectsEvaluator(random_kb)
     start_fast = time.time()
     fast = redirect_eval.evaluate_fast()
     end_fast = time.time()

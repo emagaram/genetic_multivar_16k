@@ -19,7 +19,7 @@ import archive.constants_rank as constants_rank
 
 from finger_freq import FingerFreqEvaluator
 from keyboard import RandomKeyboard, Keyboard
-from redirect import RedirectEvaluator
+from redirects import RedirectsEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from custom_types import FreqList
 from words import create_full_freq_list, create_inaccuracy_freq_list
@@ -153,7 +153,7 @@ def calculate_kb_score(
     finger_freq_evaluator: FingerFreqEvaluator,
     sfb_evaluator: SFBSFSEvaluator,
     discomfort_evaluator: DiscomfortEvaluator,
-    redirect_evaluator: RedirectEvaluator,
+    redirect_evaluator: RedirectsEvaluator,
     inaccuracy_evaluator: InaccuracyEvaluator,
     scores_dict: dict[Categories, list[float]],
 ) -> dict[str, tuple[float, float]]:
@@ -270,7 +270,7 @@ def run_simulation(
     finger_freq_evaluator = FingerFreqEvaluator(create_full_freq_list())
     sfb_evaluator = SFBSFSEvaluator()
     discomfort_evaluator = DiscomfortEvaluator()
-    redirect_evaluator = RedirectEvaluator()
+    redirect_evaluator = RedirectsEvaluator()
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     scores_cache: dict[Keyboard, dict[str, tuple[float, float]]] = {}
     errors_path = os.path.join(iteration_path, "errors")
@@ -418,7 +418,7 @@ def calculate_kb_score_no_shortcuts(
     finger_freq_evaluator: FingerFreqEvaluator,
     sfb_evaluator: SFBSFSEvaluator,
     discomfort_evaluator: DiscomfortEvaluator,
-    redirect_evaluator: RedirectEvaluator,
+    redirect_evaluator: RedirectsEvaluator,
     scores_dict: dict[Categories, list[float]],
 ) -> float:
 

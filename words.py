@@ -14,7 +14,7 @@ class CorpusFrequencies():
         characters = get_characters()
         self.bigrams_freq = sum(freq for freq in bigrams.values())
         self.trigrams_freq = sum(freq for freq in trigrams.values())
-        self.skipgrams_freq = sum(freq for skipgram_lst in skipgrams for freq in skipgram_lst.values())
+        self.skipgrams_freqs = [sum(freq for freq in skipgram_lst.values()) for skipgram_lst in skipgrams]
         self.letters_freq = sum(freq for skipgram_lst in skipgrams for freq in skipgram_lst.values())
         self.chars_freq = sum(freq for freq in characters.values())
 

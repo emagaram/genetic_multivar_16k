@@ -3,10 +3,10 @@ from discomfort import DiscomfortEvaluator
 from finger_freq import FingerFreqEvaluator
 from inaccuracy import InaccuracyEvaluator
 from keyboard import Keyboard
-from redirect import RedirectEvaluator
 from sfb_sfs import SFBSFSEvaluator
+from rolls_alts_redirects import RAREvaluator
 from words import create_inaccuracy_freq_list
-from settings import GOAL_FINGER_FREQ, GOAL_FINGER_MAX, MODE
+from settings import GOAL_FINGER_FREQ, GOAL_FINGER_MAX, MODE, InaccuracyMode
 
 
 def get_score_stats(kb: Keyboard, performance: dict[str, float]):
@@ -35,19 +35,19 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     
     # SFB
     sfb_evaluator = SFBSFSEvaluator(kb)
-    sfb_sum_only1u = sum(sfb_evaluator.evaluate_bigram_stat(bigram, True) for bigram in sfb_evaluator.bigrams.items())
+    sfb_sum_only1u = sum(sfb_evaluator.evaluate_bigram_stat(bigram, True, sfb_evaluator.corpus_frequencies.bigrams_freq) for bigram in sfb_evaluator.bigrams.items())
     res+=f"1U Same Finger Bigrams: {sfb_sum_only1u*100:.3f}%\n\n"
-    sfb_sum_only1u = sum(sfb_evaluator.evaluate_bigram_stat(bigram, False) for bigram in sfb_evaluator.bigrams.items())
-    res+=f"0U and 1U Same Finger Bigrams: {sfb_sum_only1u*100:.3f}%\n\n"
+    sfb_sum = sum(sfb_evaluator.evaluate_bigram_stat(bigram, False, sfb_evaluator.corpus_frequencies.bigrams_freq) for bigram in sfb_evaluator.bigrams.items())
+    res+=f"0U and 1U Same Finger Bigrams: {sfb_sum*100:.3f}%\n\n"
     
     # SFS 
     for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
-        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, True) for skipgram in skipgrams.items())
+        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, True, i) for skipgram in skipgrams.items())
         res+=f"1U Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
     res+="\n"
     
     for i, skipgrams in enumerate(sfb_evaluator.skipgrams):
-        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, False) for skipgram in skipgrams.items())
+        sfs_sum = sum(sfb_evaluator.evaluate_skipgram_stat(skipgram, False, i) for skipgram in skipgrams.items())
         res+=f"0U and 1U Same Finger Skipgrams-{i}: {sfs_sum*100:.3f}%\n"
     res+="\n"    
     
@@ -56,30 +56,26 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     discomfort_sum = sum(discomfort_evaluator.evaluate_bigram_stat(bigram) for bigram in sfb_evaluator.bigrams.items())
     res+=f"Discomfort: {discomfort_sum*100:.3f}%\n\n"
     
+    # Rolls, Alts, Redirects
+    rar_evaluator = RAREvaluator(kb)
+    rolls, alts, redirects = rar_evaluator.evaluate_rolls_alts_redirects_stat()    
+    res+=f"Rolls: {rolls*100:.3f}%\n"
+    res+=f"Alts: {alts*100:.3f}%\n"
+    res+=f"Redirects: {redirects*100:.3f}%\n\n"
+        
     # Inaccuracy
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     inaccuracy_evaluator.set_kb(kb)
-    res+=f"Inaccuracy:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(MODE, space)}\n"
+    res+=f"Inaccuracy {MODE.value}:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(MODE, space)}\n"
+    if MODE != InaccuracyMode.ALL:
+        res+=f"Inaccuracy {InaccuracyMode.ALL.value}:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(InaccuracyMode.ALL, space)}\n"
+
     
-    # Redirects
-    redirect_evaluator = RedirectEvaluator(kb)
-    redirect_sum = sum(redirect_evaluator.evaluate_trigram_stat(trigram) for trigram in redirect_evaluator.trigrams.items())
-    res+=f"Redirects: {redirect_sum*100:.3f}%\n\n"
-    
-    n = 100
-    res+=f"{n} words evaluated\n"
-    res+=inaccuracy_evaluator.sample_n_words(n, MODE, space)
     # Top textonyms
     res+=f"Top Texonyms Max:\n"
     top_textonyms = inaccuracy_evaluator.get_textonyms_heap()
     freq_sum = 0
     top_n = 100
-    only_first_char = 0
-    not_only_first_char = 0
-    # for freq, words, word in top_textonyms:
-    #         print(f"{word}:{words}")
-    # res+=f"only first pct: {only_first_char*100:.3f}%\n"
-    # res+=f"not only first pct: {not_only_first_char*100:.3f}%\n"
     for _ in range(top_n):
         (freq, words, word) = heapq.heappop(top_textonyms)
         freq*=-1 # To make positive

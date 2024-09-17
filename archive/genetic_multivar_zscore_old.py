@@ -17,7 +17,7 @@ from inaccuracy import evaluate_inaccuracy
 from util import calculate_mean, calculate_std, calculate_zscore
 from finger_freq import FingerFreqEvaluator
 from keyboard import RandomKeyboard, Keyboard
-from redirect import RedirectEvaluator
+from redirects import RedirectsEvaluator
 from sfb_sfs import SFBSFSEvaluator
 from custom_types import FreqList
 from words import create_inaccuracy_freq_list
@@ -175,7 +175,7 @@ def calculate_kb_score(
     finger_freq_evaluator: FingerFreqEvaluator,
     sfb_evaluator: SFBSFSEvaluator,
     hind_evaluator: DiscomfortEvaluator,
-    redirect_evaluator: RedirectEvaluator,
+    redirect_evaluator: RedirectsEvaluator,
 ) -> dict[str, float]:
 
     # Space key 18.5%
@@ -283,7 +283,7 @@ def run_simulation(
     finger_freq_evaluator = FingerFreqEvaluator(freq_list)
     sfb_evaluator = SFBSFSEvaluator()
     hind_evaluator = DiscomfortEvaluator()
-    redirect_evaluator = RedirectEvaluator()
+    redirect_evaluator = RedirectsEvaluator()
     scores_cache: dict[Keyboard, dict[str, float]] = {}
     errors_path = os.path.join(iteration_path, "errors")
     os.makedirs(errors_path, exist_ok=True)

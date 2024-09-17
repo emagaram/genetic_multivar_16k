@@ -8,3 +8,4 @@ class Categories(Enum):
     SFS = "sfs"
     DISCOMFORT = "discomfort"
     FINGERFREQ = "fingerfreq"
+    GOOD_ROLLS = "rolls"
