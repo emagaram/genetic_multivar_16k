@@ -261,7 +261,7 @@ def calculate_kb_score(
         #     print()
         # print( f"Discomfort pct: {100*(discomfort_te-discomfort_ts)/(total_te-total_ts)}%" )
         scores_cache[kb] = {
-            "Total": score,
+            "total": score,
             Categories.FINGERFREQ.value: fingerfreq_sum,
             Categories.INACCURACY.value: inaccuracy_sum,
             Categories.DISCOMFORT.value: discomfort_sum,
@@ -339,7 +339,7 @@ def run_simulation(
                 rar_evaluator,
                 inaccuracy_evaluator,
             )
-            score = performance["score"]
+            score = performance["total"]
             scored_population.append((score, kb))
 
             if score < current_best_score:
@@ -393,7 +393,7 @@ if __name__ == "__main__":
 
     # Modify your main script logic here
     # int(cpu_count()
-    num_processes = 4
+    num_processes = 1
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 
