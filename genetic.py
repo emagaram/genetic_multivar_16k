@@ -13,7 +13,7 @@ from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 from discomfort import DiscomfortEvaluator
 from get_stats import get_score_stats
-from inaccuracy import InaccuracyEvaluator, InaccuracyMode
+from inaccuracy import InaccuracyEvaluator
 from score_categories import Categories
 import settings
 
@@ -98,17 +98,32 @@ def mutate(kb: Keyboard, is_good: bool):
                 a_char = a_key.letters[a_letter_idx]
                 b_char = b_key.letters[b_letter_idx]
                 # We could write some logic to allow swapping apostrophe but it isn't worth it
-                if (a_char != "'" and b_char != "'"):
-                    break              
+                if a_char != "'" and b_char != "'":
+                    break
             a_key.letters = a_key.letters.replace(a_char, b_char, 1)
             b_key.letters = b_key.letters.replace(b_char, a_char, 1)
         # Swap column
         elif rand < 0.75:
-            col_a, colb = random.choice(random.choice(kb.keyboard)), random.choice(random.choice(kb.keyboard))
-            for key_a, key_b in zip(col_a, colb):
+
+            def has_only_letters(col: list[Key]):
+                return all(
+                    letter in Keyboard.letters_set
+                    for key in col
+                    for letter in key.letters
+                )
+
+            def get_random_letter_col():
+                while True:
+                    col = random.choice(random.choice(kb.keyboard))
+                    if has_only_letters(col):
+                        return col
+
+            col_a = get_random_letter_col(kb)
+            col_b = get_random_letter_col(kb)
+            for key_a, key_b in zip(col_a, col_b):
                 temp = key_a.letters
                 key_a.letters = key_b.letters
-                key_b.letters = temp        
+                key_b.letters = temp
         # Move key
         elif rand <= 0.85:
             a_key, _ = kb.get_random_letter_kb_index()
@@ -118,6 +133,7 @@ def mutate(kb: Keyboard, is_good: bool):
             b_key.letters = temp
         # Move letters
         else:
+
             def can_move_letters_to(moving_letter: str, letters: str):
                 return moving_letter == "'" or len(letters) < (
                     2 + 1 if letters.find("'") != -1 else 0
@@ -179,7 +195,7 @@ def calculate_kb_score(
         good_rolls_sum, redirect_sum = rar_evaluator.evaluate_rolls_redirects()
         score += settings.REDIRECT_WEIGHT * redirect_sum
         score -= settings.GOOD_ROLLS_WEIGHT * good_rolls_sum
-        
+
         fingerfreq_sum = (
             finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
         )
@@ -205,7 +221,6 @@ def calculate_kb_score(
                 break
         # discomfort_te = time.time()
         score += settings.DISCOMFORT_WEIGHT * discomfort_sum
-
 
         # inaccuracy_ts = time.time()
         minimum_failing_inaccuracy_score = (best - score) / settings.INACCURACY_WEIGHT
@@ -286,7 +301,7 @@ def run_simulation(
         level=logging.ERROR,
         format="%(asctime)s:%(levelname)s:%(message)s",
     )
-    population: list[Keyboard] = [Keyboard(layout) for _ in range(POPULATION_SIZE)]          
+    population: list[Keyboard] = [Keyboard(layout) for _ in range(POPULATION_SIZE)]
     generation_count = 1
     total_generation_count = 0
     solution_improvement_count = 0

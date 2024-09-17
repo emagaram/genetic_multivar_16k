@@ -68,7 +68,8 @@ class Keyboard():
 
     
     punctuation_set = set(get_punctuation())    
-    non_letters_set = set(get_punctuation()+[MagicKey.MAGIC_LETTER])    
+    non_letters_set = set(get_punctuation()+[MagicKey.MAGIC_LETTER])
+    letters_set = set(get_letters())
     def get_punctuation_locations(self) -> PunctuationOption:
         result = []
         for i, hand in enumerate(self.keyboard):
