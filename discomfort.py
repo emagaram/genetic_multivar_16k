@@ -27,8 +27,8 @@ class DiscomfortEvaluator:
         self.column_dict = kb_to_column_dict(kb)
         self.row_dict = kb_to_row_dict(kb)
 
-    def is_outward(self, hand: int, col1: int, col2: int):
-        return (hand == 0 and col1 > col2) or (hand == 1 and col1 < col2)
+    def is_outward(self, hand: int, prev_col: int, current_col: int):
+        return (hand == 0 and prev_col < current_col) or (hand == 1 and prev_col > current_col)
 
     def evaluate_bigram_inner_old(self, bigram: tuple[str, float], use_mult: bool):
         prev_char, curr_char = bigram[0][0], bigram[0][1]
