@@ -30,7 +30,6 @@ class DiscomfortEvaluator:
     def is_outward(self, hand: int, col1: int, col2: int):
         return (hand == 0 and col1 > col2) or (hand == 1 and col1 < col2)
 
-
     def evaluate_bigram_inner_old(self, bigram: tuple[str, float], use_mult: bool):
         prev_char, curr_char = bigram[0][0], bigram[0][1]
         freq = bigram[1]
@@ -77,12 +76,19 @@ class DiscomfortEvaluator:
             mult = PINKY_ABOVE_RING if use_mult else 1
 
         # Penalize all outrolls that don't start on index finger
-        if use_mult and not prev_is_index and self.is_outward(0 if curr_is_left else 1, prev_col, curr_col):
-            mult *= OUTWARD
-        
+        if (
+            use_mult
+            and not prev_is_index
+            and self.is_outward(0 if curr_is_left else 1, prev_col, curr_col)
+        ):
+            if mult == 0:
+                mult = OUTWARD
+            else:
+                mult *= OUTWARD
+
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
-    def evaluate_bigram_fast(self, bigram: str, freq:float):
+    def evaluate_bigram_fast(self, bigram: str, freq: float):
         prev_char, curr_char = bigram[0], bigram[1]
         prev_col = self.column_dict.get(prev_char)
         curr_col = self.column_dict.get(curr_char)
@@ -122,34 +128,37 @@ class DiscomfortEvaluator:
             mult = PINKY_ABOVE_RING
 
         # Penalize all outrolls that don't start on index finger
-        if not prev_is_index and self.is_outward(0 if curr_col <= 3 else 1, prev_col, curr_col):
+        if not prev_is_index and self.is_outward(
+            0 if curr_col <= 3 else 1, prev_col, curr_col
+        ):
             if mult == 0:
-                mult=OUTWARD
+                mult = OUTWARD
             else:
                 mult *= OUTWARD
-        
+
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
-
-    def evaluate_fast(self, max = sys.float_info.max) -> float:
+    def evaluate_fast(self, max=sys.float_info.max) -> float:
         res = 0
         for hand in self.keyboard.keyboard:
             for i, finger1 in enumerate(hand):
-                for finger2 in hand[i+1:]:
+                for finger2 in hand[i + 1 :]:
                     for key1 in finger1:
                         for letter1 in key1.letters:
                             for key2 in finger2:
                                 for letter2 in key2.letters:
-                                    for bigram in [letter1+letter2, letter2+letter1]:
+                                    for bigram in [
+                                        letter1 + letter2,
+                                        letter2 + letter1,
+                                    ]:
                                         freq = self.bigrams.get(bigram)
                                         if freq is None:
                                             continue
-                                        res+=self.evaluate_bigram_fast(bigram,freq)
+                                        res += self.evaluate_bigram_fast(bigram, freq)
                                         if res > max:
                                             return res
         return res
-                    
-                    
+
     def evaluate_bigram(self, bigram: tuple[str, float]) -> float:
         return self.evaluate_bigram_inner_old(bigram, True)
 
@@ -192,7 +201,7 @@ def test_discomfort():
     print(f"New sum took {1000*(e-s)}ms")
     # print(discomfort_sum1)
     # print(discomfort_sum2)
-    assert abs(discomfort_sum1-discomfort_sum2) < 0.0001
+    assert abs(discomfort_sum1 - discomfort_sum2) < 0.0001
     # TODO remove CorpusFrequencies and just bake it into all data
     # assert evaluator.evaluate_bigram(("ai", 1)) == 0
     # # Index key above ring
