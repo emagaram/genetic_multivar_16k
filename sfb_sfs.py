@@ -54,7 +54,9 @@ class SFBSFSEvaluator:
             for i, letter1 in enumerate(keys):
                 for letter2 in keys[i:]:
                     key = sort_str(letter1 + letter2)
-                    freq = bigrams[key] if bigrams.get(key) != None else 0
+                    freq = bigrams.get(key)
+                    if freq is None:
+                        continue
                     multiplier_inner = multiplier / (
                         SFB_SFS_DIFF_KEY_PENALTY * total_freq
                     )

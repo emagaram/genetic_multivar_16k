@@ -175,23 +175,18 @@ def calculate_kb_score(
     inaccuracy_evaluator: InaccuracyEvaluator,
 ) -> dict[str, float]:
 
-    score = 0
+    
     if kb not in scores_cache:
-        finger_freq_evaluator.set_kb(kb)
-        sfb_evaluator.set_kb(kb)
-        discomfort_evaluator.set_kb(kb)
-        redirects_evaluator.set_kb(kb)
-        inaccuracy_evaluator.set_kb(kb)
         score = 0
-
+        finger_freq_evaluator.set_kb(kb)
         fingerfreq_sum = (
             finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
         )
         score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
-
+        
+        sfb_evaluator.set_kb(kb)
         sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
         score += settings.SFB_WEIGHT * sfb_sum
-        
         sfs_sum = 0
         for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
             sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i)
@@ -199,17 +194,17 @@ def calculate_kb_score(
                 break
         score += settings.SFS_WEIGHT * sfs_sum
         
-        discomfort_sum = 0
-        for bigram in sfb_evaluator.bigrams.items():
-            discomfort_sum += discomfort_evaluator.evaluate_bigram(bigram)
-            if score + settings.DISCOMFORT_WEIGHT * discomfort_sum > best:
-                break
+        discomfort_evaluator.set_kb(kb)
+        minimum_failing_discomfort_score = (best - score) / settings.DISCOMFORT_WEIGHT
+        discomfort_sum = discomfort_evaluator.evaluate_fast(minimum_failing_discomfort_score)
         score += settings.DISCOMFORT_WEIGHT * discomfort_sum
         
+        redirects_evaluator.set_kb(kb)
         minimum_failing_redirects_score = (best - score) / settings.REDIRECT_WEIGHT
         redirect_sum = redirects_evaluator.evaluate_fast(minimum_failing_redirects_score)
         score += settings.REDIRECT_WEIGHT * redirect_sum
-
+        
+        inaccuracy_evaluator.set_kb(kb)
         minimum_failing_inaccuracy_score = (best - score) / settings.INACCURACY_WEIGHT
         inaccuracy_sum = 0
         if settings.NUM_MAGIC > 0:

@@ -73,7 +73,7 @@ class InaccuracyEvaluator:
         words_by_length: dict[int, list[tuple[str, float]]] = {}
         for word, value in self.freq_list:
             w_len = len(word)
-            if words_by_length.get(w_len) == None:
+            if words_by_length.get(w_len) is None:
                 words_by_length[w_len] = []
             words_by_length[w_len].append((word, value))
         total_checks = int(
@@ -93,7 +93,7 @@ class InaccuracyEvaluator:
                     count += 1
                     difference = self.differs(word_i, word_j)
                     if difference != None:
-                        if self.shared_key_penalties.get(difference) == None:
+                        if self.shared_key_penalties.get(difference) is None:
                             self.shared_key_penalties[difference] = min(freq_i, freq_j)
                         else:
                             self.shared_key_penalties[difference] += min(freq_i, freq_j)
@@ -115,7 +115,7 @@ class InaccuracyEvaluator:
         return score
 
     def evaluate_inaccuracy_mode(self, best: float, mode: InaccuracyMode) -> float:
-        if self.kb == None:
+        if self.kb is None:
             raise Exception("Inaccuracy evaluator has no keyboard")
         score = 0
         index_count = {}
@@ -132,7 +132,7 @@ class InaccuracyEvaluator:
         self,
         best: float,
     ) -> float:
-        if self.kb == None:
+        if self.kb is None:
             raise Exception("Inaccuracy evaluator has no keyboard")
         score = 0
         index_count = {}
@@ -266,9 +266,9 @@ def test_inaccuracy_evaluator():
     # Case 1: Words differ by only one pair of characters (e.g., "cat" and "bat")
     assert inaccuracy_evaluator.differs("cat", "bat") == "bc", "Test Case 1 Failed"
     # Case 2: Words differ by more than one pair (should return None)
-    assert inaccuracy_evaluator.differs("cat", "bog") == None, "Test Case 2 Failed"
+    assert inaccuracy_evaluator.differs("cat", "bog") is None, "Test Case 2 Failed"
     # Case 3: Words are identical (should return None, as no difference)
-    assert inaccuracy_evaluator.differs("cat", "cat") == None, "Test Case 3 Failed"
+    assert inaccuracy_evaluator.differs("cat", "cat") is None, "Test Case 3 Failed"
     # Case 4: Words differ in one spot with characters that are already sorted (e.g., "cat" and "cut")
     assert inaccuracy_evaluator.differs("cat", "cut") == "au", "Test Case 4 Failed"
     # Case 5: Words differ in one spot with characters that need to be sorted (e.g., "dog" and "fog")
@@ -276,7 +276,7 @@ def test_inaccuracy_evaluator():
     # Case 6: Words differ in multiple places but the same pair of characters (should return None)
     assert inaccuracy_evaluator.differs("abab", "baba") == "ab", "Test Case 6 Failed"
     # Case 7: Empty strings (should return None, as no difference can exist)
-    assert inaccuracy_evaluator.differs("", "") == None, "Test Case 7 Failed"
+    assert inaccuracy_evaluator.differs("", "") is None, "Test Case 7 Failed"
     print("All inaccuracy test cases passed!")
 
 

@@ -25,7 +25,7 @@ def kb_to_reverse_column_dict(kb:Keyboard) -> dict[int, str]:
         for col in hand:
             for key in col:
                 for char in key.letters:
-                    if res.get(index) == None:
+                    if res.get(index) is None:
                         res[index] = char
                     else:
                         res[index] += char

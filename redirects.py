@@ -70,7 +70,7 @@ class RedirectsEvaluator:
             return col == 3 or col == 4
 
         col0, col1, col2 = (self.column_dict.get(char) for char in trigram[0])
-        if col0 == None or col1 == None or col2 == None:
+        if col0 is None or col1 is None or col2 is None:
             return 0
         if not on_same_hand(col0, col1, col2):
             return 0
