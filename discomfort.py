@@ -31,7 +31,7 @@ class DiscomfortEvaluator:
         return (hand == 0 and col1 > col2) or (hand == 1 and col1 < col2)
 
 
-    def evaluate_bigram_inner(self, bigram: tuple[str, float], use_mult: bool):
+    def evaluate_bigram_inner_old(self, bigram: tuple[str, float], use_mult: bool):
         prev_char, curr_char = bigram[0][0], bigram[0][1]
         freq = bigram[1]
         prev_col = self.column_dict.get(prev_char)
@@ -123,7 +123,10 @@ class DiscomfortEvaluator:
 
         # Penalize all outrolls that don't start on index finger
         if not prev_is_index and self.is_outward(0 if curr_col <= 3 else 1, prev_col, curr_col):
-            mult *= OUTWARD
+            if mult == 0:
+                mult=OUTWARD
+            else:
+                mult *= OUTWARD
         
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
@@ -148,10 +151,10 @@ class DiscomfortEvaluator:
                     
                     
     def evaluate_bigram(self, bigram: tuple[str, float]) -> float:
-        return self.evaluate_bigram_inner(bigram, True)
+        return self.evaluate_bigram_inner_old(bigram, True)
 
     def evaluate_bigram_stat(self, bigram: tuple[str, float]) -> float:
-        return self.evaluate_bigram_inner(bigram, False)
+        return self.evaluate_bigram_inner_old(bigram, False)
 
 
 def test_discomfort():
