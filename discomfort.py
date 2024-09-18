@@ -81,10 +81,7 @@ class DiscomfortEvaluator:
             and not prev_is_index
             and self.is_outward(0 if curr_is_left else 1, prev_col, curr_col)
         ):
-            if mult == 0:
-                mult = OUTWARD
-            else:
-                mult *= OUTWARD
+            mult+=OUTWARD
 
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
@@ -131,11 +128,7 @@ class DiscomfortEvaluator:
         if not prev_is_index and self.is_outward(
             0 if curr_col <= 3 else 1, prev_col, curr_col
         ):
-            if mult == 0:
-                mult = OUTWARD
-            else:
-                mult *= OUTWARD
-
+            mult+=OUTWARD
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
     def evaluate_fast(self, max=sys.float_info.max) -> float:
