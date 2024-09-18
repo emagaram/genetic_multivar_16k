@@ -19,11 +19,6 @@ class DiscomfortEvaluator:
         self.row_dict = kb_to_row_dict(kb)
 
     def evaluate_bigram_inner(self, bigram: tuple[str, float], use_mult: bool):
-        """
-        * 1.5: Ring types key above middle
-        * 4: Pinky types key above middle
-        * 4.5: Pinky types key above ring
-        """
         prev_char, curr_char = bigram[0][0], bigram[0][1]
         freq = bigram[1]
         prev_col = self.column_dict.get(prev_char)

@@ -15,7 +15,7 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     
     
     for stat_name, raw_score in performance.items():
-        res+=f"{space}{stat_name.capitalize()}: {raw_score}:\n"
+        res+=f"{space}{stat_name.capitalize()}: {raw_score}\n"
     res+="\n"
     
     # Finger usage

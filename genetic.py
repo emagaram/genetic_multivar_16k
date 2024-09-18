@@ -1,28 +1,23 @@
-import json
 import logging
-import bisect
-import math
 import random
 import time
 import sys
 import os
 import copy
 import datetime
-
 from threading import Thread
 from multiprocessing import Event, Process, cpu_count
+
 from discomfort import DiscomfortEvaluator
 from get_stats import get_score_stats
 from inaccuracy import InaccuracyEvaluator
 from score_categories import Categories
-import settings
-
 from finger_freq import FingerFreqEvaluator
 from keyboard import Key, Keyboard, MagicKey
 from sfb_sfs import SFBSFSEvaluator
 from rolls_alts_redirects import RAREvaluator
 from words import create_full_freq_list, create_inaccuracy_freq_list
-
+import settings
 
 def monitor_for_termination(stop_event):
     """Monitor for the 'end' command in the console to terminate the processes."""
@@ -294,7 +289,7 @@ def run_simulation(
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     scores_cache: dict[Keyboard, dict[str, tuple[float, float]]] = {}
     errors_path = os.path.join(iteration_path, "errors")
-    os.makedirs(errors_path, exist_ok=True)
+    os.makedirs(errors_path, exist_ok=True)   
     log_file_path = os.path.join(errors_path, ERRORS_LOG_FILENAME)
     logging.basicConfig(
         filename=log_file_path,
@@ -367,7 +362,7 @@ def run_simulation(
         solution_improvement_count += 1
 
         # Selection: Top 1/4 automatically admitted, then new are generated from all
-        # We deep copy here so that the other 3/4 generate below don't have to be
+        # We deep copy here so that the other 3/4 generated below don't have to be
         next_population = [
             copy.deepcopy(config)
             for _, config in scored_population[: len(scored_population) // 4]
