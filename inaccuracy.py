@@ -1,8 +1,6 @@
-from enum import Enum
 import heapq
 import json
 import os
-import string
 import sys
 from typing import Optional
 from custom_types import FreqList
@@ -10,7 +8,7 @@ from keyboard import Key, Keyboard, MagicKey, get_t10_keys
 from settings import MODE, InaccuracyMode
 import settings
 from util import sort_str
-from words import CorpusFrequencies, create_inaccuracy_freq_list, get_letters, get_letters_and_punctuation
+from words import CorpusFrequencies, create_inaccuracy_freq_list, get_letters
 
 
 class InaccuracyEvaluator:
@@ -114,7 +112,6 @@ class InaccuracyEvaluator:
                             )
                             if score > best:
                                 return score
-        # print(f"Heuristic took {count} iterations")
         return score
 
     def evaluate_inaccuracy_mode(self, best: float, mode: InaccuracyMode) -> float:
@@ -280,11 +277,10 @@ def test_inaccuracy_evaluator():
     assert inaccuracy_evaluator.differs("abab", "baba") == "ab", "Test Case 6 Failed"
     # Case 7: Empty strings (should return None, as no difference can exist)
     assert inaccuracy_evaluator.differs("", "") == None, "Test Case 7 Failed"
+    print("All inaccuracy test cases passed!")
 
-    # print("All test cases passed!")
 
-
-test_inaccuracy_evaluator()
+# test_inaccuracy_evaluator()
 
 
 # def artificial(self):

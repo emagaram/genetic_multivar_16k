@@ -15,13 +15,6 @@ class RollEvaluator:
         n,
     ) -> list[tuple[tuple[int, int], tuple[int, int], tuple[int, int]]]:
         result = []
-        # 0, 1, 4 => [(0, 1, 4), (1, 0, 4), (4,0,1), (4,1,0)]
-        # Generate every pair going both directions for both hands
-        # Loop through 0-4
-        # Loop through 0 - 4
-        #   Generate every pair going both directions for both hands
-        # for order in range(0,2):
-
         for i in range(n + 1):
             for j in range(i + 1, n + 1):
                 for k in range(0, 4):
@@ -36,10 +29,6 @@ class RollEvaluator:
                     result.append(((0, k), (1, j), (1, i)))
                     result.append(((1, k), (0, j), (0, i)))
                     result.append(((1, k), (0, i), (0, j)))
-        # for i,roll in enumerate(result):
-        #     print(roll)
-        #     if i % 4 == 3:
-        #         print()
         return result
 
     POSITIONS_TO_EVAL: list[
@@ -201,8 +190,6 @@ def test_roll():
     redirect_stat = 0
     for trigram in redirect_evaluator.trigrams.items():
         redirect_stat += redirect_evaluator.evaluate_trigram_stat(trigram)
-    # print(f"Redirect stats: {redirect_stat}")
-    # print("Redirect tests passed!")
 
 
 test_roll()

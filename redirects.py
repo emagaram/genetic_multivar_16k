@@ -1,11 +1,9 @@
 import sys
 import time
-from settings import BAD_REDIRECT
+from settings import BAD_REDIRECT, PRINT
 from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_reverse_column_dict
 from words import CorpusFrequencies, get_trigrams
-
-# Old class, not used
 
 class RedirectsEvaluator:
     def generate_redirect_indexes(n):
@@ -18,7 +16,6 @@ class RedirectsEvaluator:
         return result
 
     POSITIONS_TO_EVAL: list[tuple[int, int, int]] = generate_redirect_indexes(3)
-
     def __init__(self, kb: Keyboard = None) -> None:
         if kb:
             self.set_kb(kb)
@@ -133,10 +130,7 @@ def test_redirect():
         slow += redirect_eval.evaluate_trigram(trigram)
     end_slow = time.time()
     assert abs(slow - fast) < 0.000001
-    # print(f"Slow took:{1000*(end_slow - start_slow)}")
-    # print(f"Fast took:{1000*(end_fast - start_fast)}")
-
-    # print("Redirect tests passed!")
+    print("Redirect tests passed!")
 
 
-test_redirect()
+# test_redirect()

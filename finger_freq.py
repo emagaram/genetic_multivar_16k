@@ -1,6 +1,6 @@
 from keyboard import Key, Keyboard
 from custom_types import FreqList
-from settings import GOAL_FINGER_MAX
+from settings import GOAL_FINGER_MAX, PRINT
 from words import CorpusFrequencies, create_inaccuracy_freq_list, get_characters
 
 
@@ -29,7 +29,6 @@ class FingerFreqEvaluator:
         ]
 
     def evaluate_finger_frequencies_MSE(self, goal: list[list[float]]) -> float:
-        # print("EV")
         finger_frequencies = self.get_finger_frequencies()
         flattened_finger_frequencies = [
             ff for hand in finger_frequencies for ff in hand
@@ -95,6 +94,7 @@ def test_evaluate_letter_freq():
     assert abs(finger_freqs[0][2] - 0.00) < epsilon
     goal_ff = [[0.65, 0, 0, 0, 0], [0, 0, 0, 0, 0]]
     assert ff.evaluate_finger_frequencies_MSE(goal_ff) - 0.0025 < epsilon
+
     print("test_evaluate_letter_freq passed!")
 
 

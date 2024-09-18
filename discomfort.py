@@ -1,4 +1,10 @@
-from settings import PINKY_ABOVE_MIDDLE, PINKY_ABOVE_RING, RING_ABOVE_MIDDLE
+from settings import (
+    OUTWARD,
+    PINKY_ABOVE_INDEX,
+    PINKY_ABOVE_MIDDLE,
+    PINKY_ABOVE_RING,
+    RING_ABOVE_MIDDLE,
+)
 from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_row_dict
 from words import CorpusFrequencies, get_bigrams
@@ -18,6 +24,9 @@ class DiscomfortEvaluator:
         self.column_dict = kb_to_column_dict(kb)
         self.row_dict = kb_to_row_dict(kb)
 
+    def is_outward(self, hand: int, col1: int, col2: int):
+        return (hand == 0 and col1 > col2) or (hand == 1 and col1 < col2)
+
     def evaluate_bigram_inner(self, bigram: tuple[str, float], use_mult: bool):
         prev_char, curr_char = bigram[0][0], bigram[0][1]
         freq = bigram[1]
@@ -28,6 +37,7 @@ class DiscomfortEvaluator:
             return 0
         curr_is_left = curr_col <= 3
         prev_is_left = prev_col <= 3
+
         prev_row = self.row_dict.get(prev_char)
         curr_row = self.row_dict.get(curr_char)
         # Keys are on different hand or we haven't changed rows
@@ -45,20 +55,27 @@ class DiscomfortEvaluator:
         prev_is_pinky = prev_col == 0 or prev_col == 7
 
         mult = 0
-        if (curr_is_ring and prev_is_middle and curr_above_prev) or (
+        if (curr_is_index and prev_is_pinky and curr_below_prev) or (
+            curr_is_pinky and prev_is_index and curr_above_prev
+        ):
+            mult = PINKY_ABOVE_INDEX if use_mult else 1
+        elif (curr_is_ring and prev_is_middle and curr_above_prev) or (
             curr_is_middle and prev_is_ring and curr_below_prev
         ):
             mult = RING_ABOVE_MIDDLE if use_mult else 1
-        # Pinky types key above middle
-        if (curr_is_pinky and prev_is_middle and curr_above_prev) or (
+        elif (curr_is_pinky and prev_is_middle and curr_above_prev) or (
             curr_is_middle and prev_is_pinky and curr_below_prev
         ):
             mult = PINKY_ABOVE_MIDDLE if use_mult else 1
-        # Pinky key above ring
-        if (curr_is_pinky and prev_is_ring and curr_above_prev) or (
+        elif (curr_is_pinky and prev_is_ring and curr_above_prev) or (
             curr_is_ring and prev_is_pinky and curr_below_prev
         ):
             mult = PINKY_ABOVE_RING if use_mult else 1
+
+        # Penalize all outrolls that don't start on index finger
+        if use_mult and not prev_is_index and self.is_outward(0 if curr_is_left else 1, prev_col, curr_col):
+            mult *= OUTWARD
+        
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
     def evaluate_bigram(self, bigram: tuple[str, float]) -> float:

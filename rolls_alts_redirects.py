@@ -190,17 +190,29 @@ def test_typing():
     typing_evaluator = RAREvaluator(kb)
     rolls_eval = RollEvaluator(kb)
     redirect_eval = RedirectsEvaluator(kb)
-    typing_rolls, typing_redirects = typing_evaluator.evaluate_rolls_redirects()
+    loops = 200
+    typing_rolls_redirects_start = time.time()
+    for _ in range(loops):
+        typing_rolls, typing_redirects = typing_evaluator.evaluate_rolls_redirects()
+    typing_rolls_redirects_end = time.time()
+    print(f"Evaluating typing rolls and redirects {loops}x took {1000*(typing_rolls_redirects_end-typing_rolls_redirects_start)}ms")
     rolls_rolls = rolls_eval.evaluate_fast()
 
-    redirect_redirects = redirect_eval.evaluate_fast()
+    redirect_rolls_start = time.time()
+    for _ in range(loops):
+        redirect_redirects = redirect_eval.evaluate_fast()
+        
+    redirect_rolls_end = time.time()
+    print(f"Evaluating rolls and redirects {loops}x took {1000*(redirect_rolls_end-redirect_rolls_start)}ms")
+    rolls_all_rolls = rolls_eval.evaluate_fast_stat()
+    
     redirect_redirects_stat = sum(redirect_eval.evaluate_trigram_stat(trigram) for trigram in redirect_eval.trigrams.items())
     typing_all_rolls, alts_all, redirect_all = typing_evaluator.evaluate_rolls_alts_redirects_stat()
-    rolls_all_rolls = rolls_eval.evaluate_fast_stat()
+    
     assert abs(typing_redirects - redirect_redirects) < 0.00001
     assert abs(typing_rolls - rolls_rolls) < 0.00001
     assert abs(typing_all_rolls - rolls_all_rolls) < 0.00001
     assert abs(redirect_redirects_stat - redirect_all) < 0.00001
 
 
-test_typing()
+# test_typing()

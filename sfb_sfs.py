@@ -109,8 +109,6 @@ class SFBSFSEvaluator:
     def evaluate_skipgram_stat(
         self, skipgram: tuple[str, float], only_1u: bool, level: int
     ) -> float:
-        # print("LV",level)
-        # print("Freqs", len(self.corpus_frequencies.skipgrams_freqs))
         return self.evaluate_bigram_stat(skipgram, only_1u, self.corpus_frequencies.skipgrams_freqs[level])
 
 
@@ -149,8 +147,6 @@ def test_speed():
         sfs_fast += evaluator.evaluate_skipgrams_fast(skipgrams, i)
     sfs_fast_end = time.time()
 
-    # print(sfb)
-    # print(sfb_fast)
     assert abs(sfb_fast - sfb) < 0.00001
     assert abs(sfs_fast - sfs) < 0.00001
     # print(f"Regular sfb took {1000*(sfb_end-sfb_start):.3f}")
@@ -203,5 +199,5 @@ def test_evaluate_sfb():
 
 
 # Run the test
-test_evaluate_sfb()
-test_speed()
+# test_evaluate_sfb()
+# test_speed()
