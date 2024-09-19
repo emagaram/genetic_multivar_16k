@@ -350,9 +350,7 @@ if __name__ == "__main__":
     termination_thread = Thread(target=monitor_for_termination, args=(stop_event,))
     termination_thread.start()
 
-    # Modify your main script logic here
-    # int(cpu_count()
-    num_processes = 4
+    num_processes = settings.NUM_PROCESSES
     iteration_id = datetime.datetime.now().strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
     processes = []
 

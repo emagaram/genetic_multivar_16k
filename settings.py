@@ -10,6 +10,8 @@ class InaccuracyMode(Enum):
 
 
 PRINT = True
+NUM_PROCESSES = 1
+
 MODE = InaccuracyMode.IGNORE_FIRST
 USE_PUNCTUATION = True
 NUM_MAGIC = 0
