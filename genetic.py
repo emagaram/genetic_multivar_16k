@@ -247,8 +247,8 @@ def calculate_kb_score(
             Categories.SFB.value: sfb_sum,
             Categories.SFS.value: sfs_sum,
             Categories.REDIRECT.value: redirect_sum,
-            Categories.INACCURACY.value: sum(val for val in inaccuracy_sums.values())
-            **({key.name:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS[key] > 0})
+            Categories.INACCURACY.value: sum(inaccuracy_sums.values()),
+            **({key.name:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS.get(key) is not None})
         }
     return scores_cache[kb]
 
