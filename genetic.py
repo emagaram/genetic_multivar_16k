@@ -49,7 +49,7 @@ def write_best_kb_to_file(
     space = "  "
     # Write the score and config to the file
     with open(full_path, "w") as file:
-        file.write(str(kb) + "\n")
+        file.write(kb.str_display() + "\n")
         file.write(get_score_stats(kb, performance))
         file.write("")
         file.write(settings.settings_to_str(space))
@@ -218,7 +218,7 @@ def calculate_kb_score(
                 continue
             add = 0
             minimum_failing_inaccuracy_score = (best - score) / weight
-            # print(f"MFS {mode.name}:{minimum_failing_inaccuracy_score}")
+
             if settings.NUM_MAGIC > 0:
                 add = inaccuracy_evaluator.evaluate_inaccuracy_mode(
                         mode, minimum_failing_inaccuracy_score
@@ -248,7 +248,7 @@ def calculate_kb_score(
             Categories.SFS.value: sfs_sum,
             Categories.REDIRECT.value: redirect_sum,
             Categories.INACCURACY.value: sum(inaccuracy_sums.values()),
-            **({key.name:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS.get(key) is not None})
+            **({key.value:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS.get(key) is not None})
         }
     return scores_cache[kb]
 

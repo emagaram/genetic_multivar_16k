@@ -201,7 +201,7 @@ def test_typing():
     redirect_rolls_start = time.time()
     for _ in range(loops):
         redirect_redirects = redirect_eval.evaluate_fast()
-        
+        rolls = rolls_eval.evaluate_fast()
     redirect_rolls_end = time.time()
     print(f"Evaluating rolls and redirects {loops}x took {1000*(redirect_rolls_end-redirect_rolls_start)}ms")
     rolls_all_rolls = rolls_eval.evaluate_fast_stat()

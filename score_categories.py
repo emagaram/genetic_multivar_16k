@@ -7,5 +7,5 @@ class Categories(Enum):
     SFB = "SFB"
     SFS = "SFS"
     DISCOMFORT = "Discomfort"
-    FINGERFREQ = "Finger_Frequencies"
+    FINGERFREQ = "Finger Frequencies"
     GOOD_ROLLS = "Good Rolls"

@@ -2,12 +2,12 @@ from enum import Enum
 
 
 class InaccuracyMode(Enum):
-    INACCURACY_IGNORE_FIRST = "InaccuracyIgnoreFirst"
-    INACCURACY_IGNORE_LAST = "InaccuracyIgnoreLast"
-    INACCURACY_ONLY_FIRST = "InaccuracyOnlyFirst"
-    INACCURACY_ONLY_LAST = "InaccuracyOnlyLast"
-    INACCURACY_MIDDLE = "InaccuracyMiddle"
-    INACCURACY_ALL = "InaccuracyAll"
+    INACCURACY_IGNORE_FIRST = "Inaccuracy Ignore First"
+    INACCURACY_IGNORE_LAST = "Inaccuracy Ignore Last"
+    INACCURACY_ONLY_FIRST = "Inaccuracy Only First"
+    INACCURACY_ONLY_LAST = "Inaccuracy Only Last"
+    INACCURACY_MIDDLE = "Inaccuracy Middle"
+    INACCURACY_ALL = "Inaccuracy All"
 
 
 PRINT = True

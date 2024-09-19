@@ -53,11 +53,11 @@ class RollEvaluator:
         return self.evaluate_fast_inner(True, max)
 
     def is_same_row_or_longer_higher(
-        self, hand: int, col1: int, col2: int, row1: int, row2: int
+        self, col1: int, col2: int, row1: int, row2: int
     ):
-        height = [[0, 1, 2, 1], [1, 2, 1, 0]]
-        c1_height = height[hand][col1]
-        c2_height = height[hand][col2]
+        height = [0, 1, 2, 1, 1, 2, 1, 0]
+        c1_height = height[col1]
+        c2_height = height[col2]
         row_diff = row2 - row1
         height_diff = c2_height - c1_height
         return row1 == row2 or (-row_diff > 0) == (height_diff > 0)
@@ -96,16 +96,16 @@ class RollEvaluator:
         ]
 
         def is_pinky(hand: int, col: int):
-            return (hand == 0 and col == 0) or (hand == 1 and col == 3)
+            return (hand == 0 and col == 0) or (hand == 1 and col == 7)
 
         def is_ring(hand: int, col: int):
-            return (hand == 0 and col == 1) or (hand == 1 and col == 2)
+            return (hand == 0 and col == 1) or (hand == 1 and col == 6)
 
         def is_adjacent(col1: int, col2: int):
             return abs(col2 - col1) == 1
 
         def is_inward(hand: int, i1: int, i2: int):
-            return (hand == 1 and i1 > i2) or (hand == 0 and i2 > i1)
+            return (hand == 0 and i2 > i1) or (hand == 1 and i1 > i2)
 
         res = 0
         for (
@@ -116,9 +116,9 @@ class RollEvaluator:
 
             for char1 in hand_column_groups[i_hand][i_col]:
                 for char2 in hand_column_groups[j_hand][j_col]:
+                    rolling_hand = j_hand
                     for char3 in hand_column_groups[k_hand][k_col]:
                         trigram = char1 + char2 + char3
-                        rolling_hand = j_hand
                         i1, i2 = (
                             (self.column_dict[char1], self.column_dict[char2])
                             if self.on_same_hand(
@@ -136,15 +136,15 @@ class RollEvaluator:
                         )
                         row1 = self.row_dict[c1]
                         row2 = self.row_dict[c2]
-                        if not is_stat and is_pinky(rolling_hand, i1 % 4):
+                        if not is_stat and is_pinky(rolling_hand, i1):
                             continue
                         if not is_stat and (
-                            is_ring(rolling_hand, i1 % 4)
-                            and is_pinky(rolling_hand, i2 % 4)
+                            is_ring(rolling_hand, i1)
+                            and is_pinky(rolling_hand, i2)
                         ):
                             continue
                         if not is_stat and not self.is_same_row_or_longer_higher(
-                            rolling_hand, i1 % 4, i2 % 4, row1, row2
+                            i1, i2, row1, row2
                         ):
                             continue
                         add = self.trigrams.get(trigram)

@@ -106,6 +106,57 @@ class Keyboard():
             for use in mk.uses.items():
                 res+=f"{space}{use[0]}:{use[1]}\n"        
         return res
+    def str_display(self):
+        res = ""
+        space_between_hands = " | "  # Fixed separator between hands with consistent spacing
+        space_between_keys = "  "     # Fixed separator between keys within a hand
+
+        # Determine the maximum key length across all keys in the keyboard
+        max_key_length = 0
+        for hand in self.keyboard:
+            for column in hand:
+                for key in column:
+                    key_str = "".join(sorted(key.letters))
+                    if len(key_str) > max_key_length:
+                        max_key_length = len(key_str)
+        CELL_WIDTH = max_key_length  # Add padding as needed (e.g., 2 spaces)
+
+        # Determine the maximum number of keys in any column across all hands
+        max_keys_per_column = 0
+        for hand in self.keyboard:
+            for column in hand:
+                if len(column) > max_keys_per_column:
+                    max_keys_per_column = len(column)
+
+        # Iterate through each key row (vertically)
+        for key_row in range(max_keys_per_column):
+            line_parts = []
+            for hand_idx, hand in enumerate(self.keyboard):
+                hand_keys = []
+                for col in hand:
+                    if key_row < len(col):
+                        # Sort the letters in the key and join them
+                        key_str = "".join(sorted(col[key_row].letters))
+                    else:
+                        key_str = ""  # Empty string if no key exists in this row
+
+                    # Pad the key string to ensure fixed width using f-string formatting
+                    key_padded = f"{key_str:<{CELL_WIDTH}}"
+                    hand_keys.append(key_padded)
+                # Join keys within the same hand with fixed spacing
+                hand_line = space_between_keys.join(hand_keys)
+                line_parts.append(hand_line)
+            # Join hands with the fixed hand separator
+            full_line = space_between_hands.join(line_parts)
+            res += full_line + "\n"  # Newline after each key row
+
+        # Append magic keys if applicable
+        if settings.NUM_MAGIC > 0:
+            res += "\nMagic:\n"
+            res += self.magic_keys_str()
+
+        return res
+        
     def __str__(self):
         res = ""
         space = "   "
@@ -182,7 +233,9 @@ def test_random_keyboard():
     layout = [[2, 2, 2, 2], [2, 2, 2, 2]]
     kb = Keyboard(layout)
     # Manually check it looks right
-    print(str(kb))
+    print(kb)
+    print()
+    print(kb.str_display())
 
 
 # test_random_keyboard()
