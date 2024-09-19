@@ -2,12 +2,12 @@ from enum import Enum
 
 
 class InaccuracyMode(Enum):
-    INACCURACY_IGNORE_FIRST = "Inaccuracy_Ignore_First"
-    INACCURACY_IGNORE_LAST = "Inaccuracy_Ignore_Last"
-    INACCURACY_ONLY_FIRST = "Inaccuracy_Only_First"
-    INACCURACY_ONLY_LAST = "Inaccuracy_Only_Last"
-    INACCURACY_MIDDLE = "Inaccuracy_Middle"
-    INACCURACY_ALL = "Inaccuracy_All"
+    INACCURACY_IGNORE_FIRST = "InaccuracyIgnoreFirst"
+    INACCURACY_IGNORE_LAST = "InaccuracyIgnoreLast"
+    INACCURACY_ONLY_FIRST = "InaccuracyOnlyFirst"
+    INACCURACY_ONLY_LAST = "InaccuracyOnlyLast"
+    INACCURACY_MIDDLE = "InaccuracyMiddle"
+    INACCURACY_ALL = "InaccuracyAll"
 
 
 PRINT = True
@@ -17,8 +17,8 @@ USE_PUNCTUATION = True
 NUM_MAGIC = 0
 
 INACCURACY_WEIGHTS: dict[InaccuracyMode, float] = {
-    InaccuracyMode.INACCURACY_IGNORE_FIRST: 0.97,
-    InaccuracyMode.INACCURACY_ALL: 0.03,
+    InaccuracyMode.INACCURACY_IGNORE_FIRST: 0.96,
+    InaccuracyMode.INACCURACY_ALL: 0.04,
 }
 SFB_WEIGHT = 0.3
 DISCOMFORT_WEIGHT = 0.075
