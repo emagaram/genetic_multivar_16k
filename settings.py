@@ -1,26 +1,30 @@
 from enum import Enum
 
+
 class InaccuracyMode(Enum):
-    IGNORE_FIRST = "Ignore First"
-    IGNORE_LAST = "Ignore Last"
-    ONLY_FIRST = "Only First"
-    ONLY_LAST = "Only Last"
-    MIDDLE = "Middle"
-    ALL = "All"
+    INACCURACY_IGNORE_FIRST = "Inaccuracy_Ignore_First"
+    INACCURACY_IGNORE_LAST = "Inaccuracy_Ignore_Last"
+    INACCURACY_ONLY_FIRST = "Inaccuracy_Only_First"
+    INACCURACY_ONLY_LAST = "Inaccuracy_Only_Last"
+    INACCURACY_MIDDLE = "Inaccuracy_Middle"
+    INACCURACY_ALL = "Inaccuracy_All"
 
 
 PRINT = True
 NUM_PROCESSES = 1
-
-MODE = InaccuracyMode.IGNORE_FIRST
+MODE = InaccuracyMode.INACCURACY_IGNORE_FIRST
 USE_PUNCTUATION = True
 NUM_MAGIC = 0
-INACCURACY_WEIGHT = 1
-SFB_WEIGHT = 0.1
-DISCOMFORT_WEIGHT = 0.025
-SFS_WEIGHT = 0.025
-REDIRECT_WEIGHT = 0.025
-FINGER_FREQ_WEIGHT = 0.0075 # 1% SFB = 13% adjustment, seems like a lot but if the pinky is at 8%, 8*1.13 = 9.04%. Fair "price" to pay for 1% SFB
+
+INACCURACY_WEIGHTS: dict[InaccuracyMode, float] = {
+    InaccuracyMode.INACCURACY_IGNORE_FIRST: 0.97,
+    InaccuracyMode.INACCURACY_ALL: 0.03,
+}
+SFB_WEIGHT = 0.3
+DISCOMFORT_WEIGHT = 0.075
+SFS_WEIGHT = 0.075
+REDIRECT_WEIGHT = 0.075
+FINGER_FREQ_WEIGHT = 0.0225
 
 # Discomfort
 PINKY_ABOVE_INDEX = 1.1
@@ -52,7 +56,10 @@ PINKY_MAX = 0.08
 RING_MAX = 0.14
 MIDDLE_MAX = 0.2
 INDEX_MAX = 0.2
-GOAL_FINGER_MAX = [[PINKY_MAX, RING_MAX, MIDDLE_MAX, INDEX_MAX],[INDEX_MAX, MIDDLE_MAX, RING_MAX, PINKY_MAX]]
+GOAL_FINGER_MAX = [
+    [PINKY_MAX, RING_MAX, MIDDLE_MAX, INDEX_MAX],
+    [INDEX_MAX, MIDDLE_MAX, RING_MAX, PINKY_MAX],
+]
 weight_sum = PINKY_WEIGHT + RING_WEIGHT + MIDDLE_WEIGHT + INDEX_WEIGHT
 PINKY_FREQ = PINKY_WEIGHT / (2 * weight_sum)
 RING_FREQ = RING_WEIGHT / (2 * weight_sum)
@@ -67,7 +74,7 @@ assert abs(sum(key for hand in GOAL_FINGER_FREQ for key in hand)) - 1 < 0.00001
 
 def settings_to_str(space: str = " ") -> str:
     return f"""Settings:
-INACCURACY_WEIGHT = {INACCURACY_WEIGHT}
+{''.join(f"{inaccuracy.name+"_WEIGHT"} = {freq:.4f}\n" for inaccuracy,freq in INACCURACY_WEIGHTS.items())}
 SFB_WEIGHT = {SFB_WEIGHT}
 REDIRECT_WEIGHT = {REDIRECT_WEIGHT}
 DISCOMFORT_WEIGHT = {DISCOMFORT_WEIGHT}

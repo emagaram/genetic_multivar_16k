@@ -66,8 +66,8 @@ def get_score_stats(kb: Keyboard, performance: dict[str, float]):
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
     inaccuracy_evaluator.set_kb(kb)
     res+=f"Inaccuracy {MODE.value}:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(MODE, space)}\n"
-    if MODE != InaccuracyMode.ALL:
-        res+=f"Inaccuracy {InaccuracyMode.ALL.value}:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(InaccuracyMode.ALL, space)}\n"
+    if MODE != InaccuracyMode.INACCURACY_ALL:
+        res+=f"Inaccuracy {InaccuracyMode.INACCURACY_ALL.value}:\n{inaccuracy_evaluator.get_t10_config_guess_percentage(InaccuracyMode.INACCURACY_ALL, space)}\n"
 
     
     # Top textonyms

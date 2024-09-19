@@ -178,59 +178,76 @@ def calculate_kb_score(
     
     if kb not in scores_cache:
         score = 0
-        finger_freq_evaluator.set_kb(kb)
-        fingerfreq_sum = (
-            finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
-        )
-        score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
-        
-        sfb_evaluator.set_kb(kb)
-        sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
-        score += settings.SFB_WEIGHT * sfb_sum
+        fingerfreq_sum = 0
+        sfb_sum = 0
         sfs_sum = 0
-        for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
-            sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i)
-            if score + settings.SFS_WEIGHT * sfs_sum > best:
-                break
-        score += settings.SFS_WEIGHT * sfs_sum
-        
-        discomfort_evaluator.set_kb(kb)
-        minimum_failing_discomfort_score = (best - score) / settings.DISCOMFORT_WEIGHT
-        discomfort_sum = discomfort_evaluator.evaluate_fast(minimum_failing_discomfort_score)
-        score += settings.DISCOMFORT_WEIGHT * discomfort_sum
-        
-        redirects_evaluator.set_kb(kb)
-        minimum_failing_redirects_score = (best - score) / settings.REDIRECT_WEIGHT
-        redirect_sum = redirects_evaluator.evaluate_fast(minimum_failing_redirects_score)
-        score += settings.REDIRECT_WEIGHT * redirect_sum
+        discomfort_sum = 0
+        inaccuracy_sums:dict[settings.InaccuracyMode, float] = {key:0 for key in settings.InaccuracyMode} 
+        redirect_sum = 0
+        if settings.FINGER_FREQ_WEIGHT > 0:
+            finger_freq_evaluator.set_kb(kb)
+            fingerfreq_sum = (
+                finger_freq_evaluator.evaluate_finger_frequencies_max_limit_MAPE()
+            )
+            score += settings.FINGER_FREQ_WEIGHT * fingerfreq_sum
+        if settings.SFB_WEIGHT > 0:
+            sfb_evaluator.set_kb(kb)
+            sfb_sum = sfb_evaluator.evaluate_bigrams_fast(sfb_evaluator.fast_bigrams, 1)
+            score += settings.SFB_WEIGHT * sfb_sum
+        if settings.SFS_WEIGHT > 0:
+            minimum_failing_sfs_score = (best - score) / settings.SFS_WEIGHT
+            for i, skipgrams in enumerate(sfb_evaluator.fast_skipgrams):
+                sfs_sum += sfb_evaluator.evaluate_skipgrams_fast(skipgrams, i)
+                if sfs_sum > minimum_failing_sfs_score:
+                    break
+            score += settings.SFS_WEIGHT * sfs_sum
+        if settings.DISCOMFORT_WEIGHT > 0:
+            discomfort_evaluator.set_kb(kb)
+            minimum_failing_discomfort_score = (best - score) / settings.DISCOMFORT_WEIGHT
+            discomfort_sum = discomfort_evaluator.evaluate_fast(minimum_failing_discomfort_score)
+            score += settings.DISCOMFORT_WEIGHT * discomfort_sum
+        if settings.REDIRECT_WEIGHT > 0:
+            redirects_evaluator.set_kb(kb)
+            minimum_failing_redirects_score = (best - score) / settings.REDIRECT_WEIGHT
+            redirect_sum = redirects_evaluator.evaluate_fast(minimum_failing_redirects_score)
+            score += settings.REDIRECT_WEIGHT * redirect_sum
         
         inaccuracy_evaluator.set_kb(kb)
-        minimum_failing_inaccuracy_score = (best - score) / settings.INACCURACY_WEIGHT
-        inaccuracy_sum = 0
-        if settings.NUM_MAGIC > 0:
-            inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(
-                minimum_failing_inaccuracy_score, settings.MODE
-            )
-        else:
-            heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
-                minimum_failing_inaccuracy_score
-            )
-            if heuristic > minimum_failing_inaccuracy_score:
-                inaccuracy_sum = heuristic
-            else:
-                inaccuracy_sum = inaccuracy_evaluator.evaluate_inaccuracy_mode(
-                    minimum_failing_inaccuracy_score, settings.MODE
+        for mode, weight in sorted(settings.INACCURACY_WEIGHTS.items(), key=lambda x:x[1], reverse=True):
+            if weight == 0:
+                continue
+            add = 0
+            minimum_failing_inaccuracy_score = (best - score) / weight
+            # print(f"MFS {mode.name}:{minimum_failing_inaccuracy_score}")
+            if settings.NUM_MAGIC > 0:
+                add = inaccuracy_evaluator.evaluate_inaccuracy_mode(
+                        mode, minimum_failing_inaccuracy_score
                 )
-        score += settings.INACCURACY_WEIGHT * inaccuracy_sum
+                inaccuracy_sums[mode] = add
+            else:
+                heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
+                    mode,
+                    minimum_failing_inaccuracy_score
+                )
+                if heuristic > minimum_failing_inaccuracy_score:
+                    score += weight * heuristic
+                    break
+                else:
+                    add = inaccuracy_evaluator.evaluate_inaccuracy_mode(
+                        mode, minimum_failing_inaccuracy_score
+                    )
+                    inaccuracy_sums[mode] = add
+            score += weight * add
+        
 
         scores_cache[kb] = {
             "total": score,
             Categories.FINGERFREQ.value: fingerfreq_sum,
-            Categories.INACCURACY.value: inaccuracy_sum,
             Categories.DISCOMFORT.value: discomfort_sum,
             Categories.SFB.value: sfb_sum,
             Categories.SFS.value: sfs_sum,
             Categories.REDIRECT.value: redirect_sum,
+            **({key.name:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS[key] > 0})
         }
     return scores_cache[kb]
 
