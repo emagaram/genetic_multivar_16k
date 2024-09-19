@@ -28,7 +28,9 @@ class DiscomfortEvaluator:
         self.row_dict = kb_to_row_dict(kb)
 
     def is_outward(self, hand: int, prev_col: int, current_col: int):
-        return (hand == 0 and prev_col < current_col) or (hand == 1 and prev_col > current_col)
+        return (hand == 0 and current_col < prev_col) or (
+            hand == 1 and current_col > prev_col
+        )
 
     def evaluate_bigram_inner_old(self, bigram: tuple[str, float], use_mult: bool):
         prev_char, curr_char = bigram[0][0], bigram[0][1]
@@ -81,7 +83,7 @@ class DiscomfortEvaluator:
             and not prev_is_index
             and self.is_outward(0 if curr_is_left else 1, prev_col, curr_col)
         ):
-            mult+=OUTWARD
+            mult += OUTWARD
 
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
@@ -128,7 +130,7 @@ class DiscomfortEvaluator:
         if not prev_is_index and self.is_outward(
             0 if curr_col <= 3 else 1, prev_col, curr_col
         ):
-            mult+=OUTWARD
+            mult += OUTWARD
         return mult * freq / self.corpus_frequencies.bigrams_freq
 
     def evaluate_fast(self, max=sys.float_info.max) -> float:
