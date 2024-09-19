@@ -74,7 +74,8 @@ assert abs(sum(key for hand in GOAL_FINGER_FREQ for key in hand)) - 1 < 0.00001
 
 def settings_to_str(space: str = " ") -> str:
     return f"""Settings:
-{''.join(f"{inaccuracy.name+"_WEIGHT"} = {freq:.4f}\n" for inaccuracy,freq in INACCURACY_WEIGHTS.items())}
+INACCURACY_IGNORE_FIRST = {INACCURACY_WEIGHTS[InaccuracyMode.INACCURACY_IGNORE_FIRST]}
+INACCURACY_ALL = {INACCURACY_WEIGHTS[InaccuracyMode.INACCURACY_ALL]}
 SFB_WEIGHT = {SFB_WEIGHT}
 REDIRECT_WEIGHT = {REDIRECT_WEIGHT}
 DISCOMFORT_WEIGHT = {DISCOMFORT_WEIGHT}
