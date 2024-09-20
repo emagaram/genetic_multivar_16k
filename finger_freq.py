@@ -1,6 +1,6 @@
 from keyboard import Key, Keyboard
 from custom_types import FreqList
-from settings import GOAL_FINGER_MAX, PRINT
+from settings import FINGER_MAX_GRID, PRINT
 from words import CorpusFrequencies, create_inaccuracy_freq_list, get_characters
 
 
@@ -56,7 +56,7 @@ class FingerFreqEvaluator:
         flattened_finger_frequencies = [
             ff for hand in finger_frequencies for ff in hand
         ]
-        flattened_goal = [freq for hand in GOAL_FINGER_MAX for freq in hand]
+        flattened_goal = [freq for hand in FINGER_MAX_GRID for freq in hand]
 
         return sum(
             (max(0, a - t) / t)

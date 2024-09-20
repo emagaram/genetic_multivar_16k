@@ -1,9 +1,10 @@
 import sys
 import time
-from settings import BAD_REDIRECT, PRINT
+from settings import BAD_REDIRECT, NORMAL_REDIRECT, PRINT
 from keyboard import Key, Keyboard
 from util import kb_to_column_dict, kb_to_reverse_column_dict
 from words import CorpusFrequencies, get_trigrams
+
 
 class RedirectsEvaluator:
     def generate_redirect_indexes(n):
@@ -11,11 +12,12 @@ class RedirectsEvaluator:
         for i in range(n + 1):
             for j in range(n + 1):
                 for k in range(n + 1):
-                    if ((i < j > k) or (i > j < k)) and (i!=j!=k):
+                    if ((i < j > k) or (i > j < k)) and (i != j != k):
                         result.append((i, j, k))
         return result
 
     POSITIONS_TO_EVAL: list[tuple[int, int, int]] = generate_redirect_indexes(3)
+
     def __init__(self, kb: Keyboard = None) -> None:
         if kb:
             self.set_kb(kb)
@@ -53,7 +55,7 @@ class RedirectsEvaluator:
                                     or is_index(hand_i, j)
                                     or is_index(hand_i, k)
                                 ):
-                                    score += freq
+                                    score += NORMAL_REDIRECT * freq
                                 else:
                                     score += freq * BAD_REDIRECT
                                 if score > max:
@@ -76,8 +78,12 @@ class RedirectsEvaluator:
             return 0
         # Right and then left, left and then right
         if (col1 > col0 and col1 > col2) or (col1 < col0 and col2 > col1):
-            if not use_mult or (is_index_finger(col0) or is_index_finger(col1) or is_index_finger(col2)):
-                return trigram[1] / self.corpus_frequencies.trigrams_freq
+            if not use_mult or (
+                is_index_finger(col0) or is_index_finger(col1) or is_index_finger(col2)
+            ):
+                return (
+                    trigram[1] * NORMAL_REDIRECT / self.corpus_frequencies.trigrams_freq
+                )
             else:
                 return trigram[1] * BAD_REDIRECT / self.corpus_frequencies.trigrams_freq
         return 0

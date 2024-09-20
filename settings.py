@@ -1,6 +1,4 @@
 from enum import Enum
-
-
 class InaccuracyMode(Enum):
     INACCURACY_IGNORE_FIRST = "Inaccuracy Ignore First"
     INACCURACY_IGNORE_LAST = "Inaccuracy Ignore Last"
@@ -8,68 +6,98 @@ class InaccuracyMode(Enum):
     INACCURACY_ONLY_LAST = "Inaccuracy Only Last"
     INACCURACY_MIDDLE = "Inaccuracy Middle"
     INACCURACY_ALL = "Inaccuracy All"
-
+class Categories(Enum):
+    TOTAL = "Total"
+    INACCURACY = "Inaccuracy"
+    REDIRECT = "Redirects"
+    SFB = "SFB"
+    SFS = "SFS"
+    DISCOMFORT = "Discomfort"
+    FINGERFREQ = "Finger Frequencies"
+    GOOD_ROLLS = "Good Rolls"
+    EFFORT = "Effort"
 
 PRINT = True
-NUM_PROCESSES = 1
+NUM_PROCESSES = 3
+
+LAYOUT = [[2, 2, 2, 2], [2, 2, 2, 2]]
+EFFORT_BEAKLISH = [
+    [[3.52, 1.6], [0.64, 0.32], [0.64, 0.32], [0.64, 0.32]],
+    [[0.64, 0.32], [0.64, 0.32], [0.64, 0.32], [3.52, 1.6]],
+]
+EFFORT_COLEMAKISH = [
+    [[1.5, 0.6], [0.72, 0.4], [0.6, 0.33], [0.66, 0.3]],
+    [[0.66, 0.3], [0.6, 0.33], [0.72, 0.4], [1.5, 0.6]],
+]
+
+EFFORT_BEAKL_COLEMAK = [
+    [[2.44, 1.11], [1.06, 0.57], [0.88, 0.48], [0.97, 0.44]],
+    [[0.97, 0.44], [0.88, 0.48], [1.06, 0.57], [2.44, 1.11]],
+]
+EFFORT_GRID = EFFORT_BEAKL_COLEMAK
+
 MODE = InaccuracyMode.INACCURACY_IGNORE_FIRST
 USE_PUNCTUATION = True
 NUM_MAGIC = 0
 
+# Weights
 INACCURACY_WEIGHTS: dict[InaccuracyMode, float] = {
-    InaccuracyMode.INACCURACY_IGNORE_FIRST: 0.96,
-    InaccuracyMode.INACCURACY_ALL: 0.04,
+    InaccuracyMode.INACCURACY_IGNORE_FIRST: 0.95,
+    InaccuracyMode.INACCURACY_ALL: 0.05,
 }
 SFB_WEIGHT = 0.3
+SFS_WEIGHT = 0.1
 DISCOMFORT_WEIGHT = 0.075
-SFS_WEIGHT = 0.075
-REDIRECT_WEIGHT = 0.075
-FINGER_FREQ_WEIGHT = 0.0225
+EFFORT_WEIGHT = 0.05
+REDIRECT_WEIGHT = 0.04
+FINGER_FREQ_WEIGHT = 0
 
 # Discomfort
-PINKY_ABOVE_INDEX = 1.1
-PINKY_ABOVE_MIDDLE = 1.1**2
-PINKY_ABOVE_RING = 1.1**3
-RING_ABOVE_MIDDLE = 1.1**3
+PINKY_ABOVE_INDEX = 0.5
+PINKY_ABOVE_MIDDLE = 1.2
+PINKY_ABOVE_RING = 1.8
+RING_ABOVE_MIDDLE = 1
 OUTWARD = 0.1
 
-# Redirect
+# Redirects
+NORMAL_REDIRECT = 0.8
 BAD_REDIRECT = 2
 
 # SFB SFS
-# Need this penalty since SFRs count as an SFB (a "0U SFB"). SFRs count as 1/SFB_SFS_DIFF_KEY_PENALTY of an SFB
+# Need this penalty since SFRs count as an SFB (a "0U SFB").
+# SFRs count as 1/SFB_SFS_DIFF_KEY_PENALTY of an SFB. SFBs count as 1
 SFB_SFS_DIFF_KEY_PENALTY = 3
 SFB_SFS_PINKY_PENALTY = 2.5
 
-# Rolls
+# NOT USED CURRENTLY: Good Rolls
 INWARD_BONUS = 1.1
 ADJACENT_BONUS = 1.05
 
-# Finger Freq
+# NOT USED CURRENTLY: Max usage
+PINKY_MAX = 0.06
+RING_MAX = 0.15
+MIDDLE_MAX = 0.2
+INDEX_MAX = 0.2
+FINGER_MAX_GRID = [
+    [PINKY_MAX, RING_MAX, MIDDLE_MAX, INDEX_MAX],
+    [INDEX_MAX, MIDDLE_MAX, RING_MAX, PINKY_MAX],
+]
+
+# NOT USED CURRENTLY: Exact weighting
 PINKY_WEIGHT = 1.5
 RING_WEIGHT = 3.6
 MIDDLE_WEIGHT = 4.8
 INDEX_WEIGHT = 5.5
-
-# From Oxeylyzer, pinky - 1%
-PINKY_MAX = 0.08
-RING_MAX = 0.14
-MIDDLE_MAX = 0.2
-INDEX_MAX = 0.2
-GOAL_FINGER_MAX = [
-    [PINKY_MAX, RING_MAX, MIDDLE_MAX, INDEX_MAX],
-    [INDEX_MAX, MIDDLE_MAX, RING_MAX, PINKY_MAX],
-]
 weight_sum = PINKY_WEIGHT + RING_WEIGHT + MIDDLE_WEIGHT + INDEX_WEIGHT
 PINKY_FREQ = PINKY_WEIGHT / (2 * weight_sum)
 RING_FREQ = RING_WEIGHT / (2 * weight_sum)
 MIDDLE_FREQ = MIDDLE_WEIGHT / (2 * weight_sum)
 INDEX_FREQ = INDEX_WEIGHT / (2 * weight_sum)
-GOAL_FINGER_FREQ = [
+FINGER_GOAL_GRID = [
     [PINKY_FREQ, RING_FREQ, MIDDLE_FREQ, INDEX_FREQ],
     [INDEX_FREQ, MIDDLE_FREQ, RING_FREQ, PINKY_FREQ],
 ]
-assert abs(sum(key for hand in GOAL_FINGER_FREQ for key in hand)) - 1 < 0.00001
+assert abs(sum(key for hand in FINGER_GOAL_GRID for key in hand)) - 1 < 0.00001
 
 
 def settings_to_str(space: str = " ") -> str:
@@ -77,11 +105,12 @@ def settings_to_str(space: str = " ") -> str:
 INACCURACY_IGNORE_FIRST = {INACCURACY_WEIGHTS[InaccuracyMode.INACCURACY_IGNORE_FIRST]}
 INACCURACY_ALL = {INACCURACY_WEIGHTS[InaccuracyMode.INACCURACY_ALL]}
 SFB_WEIGHT = {SFB_WEIGHT}
-REDIRECT_WEIGHT = {REDIRECT_WEIGHT}
-DISCOMFORT_WEIGHT = {DISCOMFORT_WEIGHT}
 SFS_WEIGHT = {SFS_WEIGHT}
-FINGER_FREQ_WEIGHT = {FINGER_FREQ_WEIGHT}
-FINGER_FREQ_WEIGHT = {FINGER_FREQ_WEIGHT}
+DISCOMFORT_WEIGHT = {DISCOMFORT_WEIGHT}
+REDIRECT_WEIGHT = {REDIRECT_WEIGHT}
+EFFORT_WEIGHT = {EFFORT_WEIGHT}
+
+EFFORT_GRID = {EFFORT_GRID}
 
 Discomfort:
 {space}PINKY_ABOVE_RING = {PINKY_ABOVE_RING}
@@ -101,8 +130,4 @@ Finger Frequencies:
 {space}RING_MAX = {RING_MAX}
 {space}MIDDLE_MAX = {MIDDLE_MAX}
 {space}INDEX_MAX = {INDEX_MAX}
-
-Rolls
-INWARD_BONUS = {INWARD_BONUS}
-ADJACENT_BONUS = {ADJACENT_BONUS}
 """

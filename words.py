@@ -12,11 +12,11 @@ class CorpusFrequencies():
         trigrams = get_trigrams()
         skipgrams = get_skipgrams()
         characters = get_characters()
-        self.bigrams_freq = sum(freq for freq in bigrams.values())
-        self.trigrams_freq = sum(freq for freq in trigrams.values())
-        self.skipgrams_freqs = [sum(freq for freq in skipgram_lst.values()) for skipgram_lst in skipgrams]
+        self.bigrams_freq = sum(bigrams.values())
+        self.trigrams_freq = sum(trigrams.values())
+        self.skipgrams_freqs = [sum(skipgram_lst.values()) for skipgram_lst in skipgrams]
         self.letters_freq = sum(freq for skipgram_lst in skipgrams for freq in skipgram_lst.values())
-        self.chars_freq = sum(freq for freq in characters.values())
+        self.chars_freq = sum(characters.values())
 
 def get_punctuation():
     return list(".,") if USE_PUNCTUATION else list("")
@@ -99,5 +99,5 @@ def get_characters() -> dict[str, float]:
     return {
         key: val
         for key, val in get_from_shai("characters").items()
-        if all(c in get_letters_and_punctuation() for c in key)
+        if key in get_letters_and_punctuation()
     }

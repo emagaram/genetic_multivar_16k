@@ -9,15 +9,16 @@ from threading import Thread
 from multiprocessing import Event, Process, cpu_count
 
 from discomfort import DiscomfortEvaluator
+from effort import EffortEvaluator
 from get_stats import get_score_stats
 from inaccuracy import InaccuracyEvaluator
 from redirects import RedirectsEvaluator
-from score_categories import Categories
 from finger_freq import FingerFreqEvaluator
 from keyboard import Key, Keyboard, MagicKey
 from sfb_sfs import SFBSFSEvaluator
-from words import create_full_freq_list, create_inaccuracy_freq_list
+from words import create_full_freq_list, create_inaccuracy_freq_list, get_characters
 import settings
+
 
 def monitor_for_termination(stop_event):
     """Monitor for the 'end' command in the console to terminate the processes."""
@@ -75,11 +76,10 @@ punctuation_options_2_symbols: list[
 
 
 # Moves a letter to another key
-def mutate(kb: Keyboard, is_good: bool):
+def mutate(kb: Keyboard):
     # Idk for this
-    num_loops = random.randint(1, 3) if is_good else random.randint(2, 6)
 
-    for _ in range(num_loops):
+    for _ in range(random.randint(1, 5)):
         rand = random.random()
         if rand < 0.3 and len(kb.magic_locations) > 0:
             hand, col, row = random.choice(kb.magic_locations)
@@ -120,7 +120,7 @@ def mutate(kb: Keyboard, is_good: bool):
                 key_a.letters = key_b.letters
                 key_b.letters = temp
         # Move key
-        elif rand <= 0.85:
+        elif rand < 0.85:
             a_key, _ = kb.get_random_letter_kb_index()
             b_key, _ = kb.get_random_letter_kb_index()
             temp = a_key.letters
@@ -173,17 +173,24 @@ def calculate_kb_score(
     discomfort_evaluator: DiscomfortEvaluator,
     redirects_evaluator: RedirectsEvaluator,
     inaccuracy_evaluator: InaccuracyEvaluator,
+    effort_evaluator: EffortEvaluator,
 ) -> dict[str, float]:
 
-    
     if kb not in scores_cache:
         score = 0
         fingerfreq_sum = 0
         sfb_sum = 0
         sfs_sum = 0
         discomfort_sum = 0
-        inaccuracy_sums:dict[settings.InaccuracyMode, float] = {key:0 for key in settings.InaccuracyMode} 
         redirect_sum = 0
+        effort_sum = 0
+        inaccuracy_sums: dict[settings.InaccuracyMode, float] = {
+            key: 0 for key in settings.InaccuracyMode
+        }
+        if settings.EFFORT_WEIGHT > 0:
+            effort_evaluator.set_kb(kb)
+            effort_sum = effort_evaluator.evaluate_effort()
+            score += settings.EFFORT_WEIGHT * effort_sum
         if settings.FINGER_FREQ_WEIGHT > 0:
             finger_freq_evaluator.set_kb(kb)
             fingerfreq_sum = (
@@ -203,17 +210,25 @@ def calculate_kb_score(
             score += settings.SFS_WEIGHT * sfs_sum
         if settings.DISCOMFORT_WEIGHT > 0:
             discomfort_evaluator.set_kb(kb)
-            minimum_failing_discomfort_score = (best - score) / settings.DISCOMFORT_WEIGHT
-            discomfort_sum = discomfort_evaluator.evaluate_fast(minimum_failing_discomfort_score)
+            minimum_failing_discomfort_score = (
+                best - score
+            ) / settings.DISCOMFORT_WEIGHT
+            discomfort_sum = discomfort_evaluator.evaluate_fast(
+                minimum_failing_discomfort_score
+            )
             score += settings.DISCOMFORT_WEIGHT * discomfort_sum
         if settings.REDIRECT_WEIGHT > 0:
             redirects_evaluator.set_kb(kb)
             minimum_failing_redirects_score = (best - score) / settings.REDIRECT_WEIGHT
-            redirect_sum = redirects_evaluator.evaluate_fast(minimum_failing_redirects_score)
+            redirect_sum = redirects_evaluator.evaluate_fast(
+                minimum_failing_redirects_score
+            )
             score += settings.REDIRECT_WEIGHT * redirect_sum
-        
+
         inaccuracy_evaluator.set_kb(kb)
-        for mode, weight in sorted(settings.INACCURACY_WEIGHTS.items(), key=lambda x:x[1], reverse=True):
+        for mode, weight in sorted(
+            settings.INACCURACY_WEIGHTS.items(), key=lambda x: x[1], reverse=True
+        ):
             if weight == 0:
                 continue
             add = 0
@@ -221,13 +236,12 @@ def calculate_kb_score(
 
             if settings.NUM_MAGIC > 0:
                 add = inaccuracy_evaluator.evaluate_inaccuracy_mode(
-                        mode, minimum_failing_inaccuracy_score
+                    mode, minimum_failing_inaccuracy_score
                 )
                 inaccuracy_sums[mode] = add
             else:
                 heuristic = inaccuracy_evaluator.evaluate_inaccuracy_heuristic(
-                    mode,
-                    minimum_failing_inaccuracy_score
+                    mode, minimum_failing_inaccuracy_score
                 )
                 if heuristic > minimum_failing_inaccuracy_score:
                     score += weight * heuristic
@@ -238,17 +252,23 @@ def calculate_kb_score(
                     )
                     inaccuracy_sums[mode] = add
             score += weight * add
-        
 
         scores_cache[kb] = {
-            "total": score,
-            Categories.FINGERFREQ.value: fingerfreq_sum,
-            Categories.DISCOMFORT.value: discomfort_sum,
-            Categories.SFB.value: sfb_sum,
-            Categories.SFS.value: sfs_sum,
-            Categories.REDIRECT.value: redirect_sum,
-            Categories.INACCURACY.value: sum(inaccuracy_sums.values()),
-            **({key.value:val for key, val in inaccuracy_sums.items() if settings.INACCURACY_WEIGHTS.get(key) is not None})
+            settings.Categories.TOTAL.value: score,
+            settings.Categories.FINGERFREQ.value: fingerfreq_sum,
+            settings.Categories.DISCOMFORT.value: discomfort_sum,
+            settings.Categories.SFB.value: sfb_sum,
+            settings.Categories.SFS.value: sfs_sum,
+            settings.Categories.REDIRECT.value: redirect_sum,
+            settings.Categories.EFFORT.value: effort_sum,
+            settings.Categories.INACCURACY.value: sum(inaccuracy_sums.values()),
+            **(
+                {
+                    key.value: val
+                    for key, val in inaccuracy_sums.items()
+                    if settings.INACCURACY_WEIGHTS.get(key) is not None
+                }
+            ),
         }
     return scores_cache[kb]
 
@@ -271,9 +291,10 @@ def run_simulation(
     discomfort_evaluator = DiscomfortEvaluator()
     redirects_evaluator = RedirectsEvaluator()
     inaccuracy_evaluator = InaccuracyEvaluator(create_inaccuracy_freq_list())
+    effort_evaluator = EffortEvaluator(settings.EFFORT_GRID, get_characters())
     scores_cache: dict[Keyboard, dict[str, tuple[float, float]]] = {}
     errors_path = os.path.join(iteration_path, "errors")
-    os.makedirs(errors_path, exist_ok=True)   
+    os.makedirs(errors_path, exist_ok=True)
     log_file_path = os.path.join(errors_path, ERRORS_LOG_FILENAME)
     logging.basicConfig(
         filename=log_file_path,
@@ -283,7 +304,7 @@ def run_simulation(
     population: list[Keyboard] = [Keyboard(layout) for _ in range(POPULATION_SIZE)]
     generation_count = 1
     total_generation_count = 0
-    solution_improvement_count = 0     
+    solution_improvement_count = 0
     while not stop_event.is_set():
         if stop_event.is_set():
             break
@@ -315,8 +336,9 @@ def run_simulation(
                 discomfort_evaluator,
                 redirects_evaluator,
                 inaccuracy_evaluator,
+                effort_evaluator,
             )
-            score = performance["total"]
+            score = performance[settings.Categories.TOTAL.value]
             scored_population.append((score, kb))
 
             if score < current_best_score:
@@ -334,7 +356,6 @@ def run_simulation(
 
         # Sort the population based on the score (lower is better)
         scored_population.sort(key=lambda x: x[0])
-        avg = sum(score for score, _ in scored_population) / len(scored_population)
         if settings.PRINT:
             end_time = time.time()
             print(
@@ -353,7 +374,7 @@ def run_simulation(
 
         while len(next_population) < POPULATION_SIZE:
             score, kb = scored_population.pop()
-            mutate(kb, score < avg)
+            mutate(kb)
             next_population.append(kb)
 
         population = next_population
@@ -377,15 +398,13 @@ if __name__ == "__main__":
     iteration_path = os.path.join(base_path, iteration_id)
     os.makedirs(iteration_path, exist_ok=True)
 
-    layout = [[2, 2, 2, 2], [2, 2, 2, 2]]
-
     for i in range(num_processes):
         p = Process(
             target=run_simulation,
             args=(
                 iteration_path,
                 stop_event,
-                layout,
+                settings.LAYOUT,
             ),
         )
         p.start()
@@ -403,75 +422,3 @@ if __name__ == "__main__":
         # Finally, write the end time regardless of how the program exits
         write_end_time(iteration_path)
         print(f"End time written to {os.path.join(iteration_path, 'end_time.txt')}")
-
-
-"""
-
-    kb = Keyboard(
-        layout,
-        [
-            [
-                [Key("m"), Key("s")],
-                [Key("'cf"), Key("gp")],
-                [Key("jn"), Key("rw")],
-                [Key("qt"), Key("ly")],
-            ],
-            [
-                [Key("az"), Key("ox")],
-                [Key("ev"), Key("ku")],
-                [Key(","), Key("bi")],
-                [Key("."), Key("dh")],
-            ],
-        ],
-    )    
-    performance = calculate_kb_score(
-        kb,
-        current_best_score,
-        scores_cache,
-        finger_freq_evaluator,
-        sfb_evaluator,
-        discomfort_evaluator,
-        redirect_evaluator,
-        inaccuracy_evaluator,
-    )
-    write_best_kb_to_file(
-        "./test1.txt",
-        performance,
-        kb,
-        SCORE_FILE,
-    )    
-    kb2 = Keyboard(
-        layout,
-        [
-            [
-                [Key("mz"), Key("'cy")],
-                [Key("px"), Key("lu")],
-                [Key("be"), Key("n")],
-                [Key("qt"), Key("jr")],
-            ],
-            [
-                [Key("aw"), Key("df")],
-                [Key("s"), Key("ko")],
-                [Key(","), Key("gi")],
-                [Key("."), Key("vh")],
-            ],
-        ],
-    )   
-    performance = calculate_kb_score(
-        kb2,
-        current_best_score,
-        scores_cache,
-        finger_freq_evaluator,
-        sfb_evaluator,
-        discomfort_evaluator,
-        redirect_evaluator,
-        inaccuracy_evaluator,
-    )    
-    write_best_kb_to_file(
-        "./test2.txt",
-        performance,
-        kb2,
-        SCORE_FILE,
-    )  
-
-"""
